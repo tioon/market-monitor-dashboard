@@ -300,6 +300,52 @@ button {
   line-height: 1.45;
 }
 
+.daily-return-table {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.045);
+}
+
+.daily-return-head h4 {
+  margin: 0;
+  font-size: 0.96rem;
+}
+
+.daily-return-head p {
+  margin: 6px 0 12px;
+  color: var(--muted);
+  font-size: 0.83rem;
+}
+
+.daily-return-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.82rem;
+}
+
+.daily-return-table th,
+.daily-return-table td {
+  padding: 11px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: left;
+}
+
+.daily-return-table th {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.daily-return-table td.up {
+  color: #d8ffef;
+}
+
+.daily-return-table td.down {
+  color: #ffc2d0;
+}
+
 .workspace {
   grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.8fr);
   margin-top: 16px;

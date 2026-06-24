@@ -143,14 +143,67 @@ function projectLabel(projectId) {
   return projectId === 'market-agent' ? 'Market Agent' : 'Crypto Agent';
 }
 
-function formatPnl(value) {
+function getReturnRows(project) {
+  const rows = project.performance?.report_json?.return_rows;
+  return Array.isArray(rows) ? rows : [];
+}
+
+function mergeReturnRows(marketProject, cryptoProject) {
+  const marketRows = getReturnRows(marketProject);
+  const cryptoRows = getReturnRows(cryptoProject);
+  const marketMap = new Map(marketRows.map((row) => [dayOnly(row.generated_at), row]));
+  const cryptoMap = new Map(cryptoRows.map((row) => [dayOnly(row.generated_at), row]));
+  const days = [...new Set([...marketMap.keys(), ...cryptoMap.keys()])].sort();
+
+  return days.map((day) => ({
+    day,
+    market: marketMap.get(day) || null,
+    crypto: cryptoMap.get(day) || null,
+  }));
+}
+
+function getPeriodRows(rows, scenarioDays) {
+  if (!rows.length) return [];
+  const limit = Math.max(1, Math.min(rows.length, Math.round(toNumber(scenarioDays, rows.length))));
+  return rows.slice(-limit);
+}
+
+function buildPnlTimeline(rows, capital, marketWeight, cryptoWeight) {
+  const totalExposure = marketWeight + cryptoWeight;
+  const cashWeight = totalExposure >= 1 ? 0 : 1 - totalExposure;
+  const normalizedMarketWeight = totalExposure > 1 ? marketWeight / totalExposure : marketWeight;
+  const normalizedCryptoWeight = totalExposure > 1 ? cryptoWeight / totalExposure : cryptoWeight;
+
+  let runningCapital = capital;
+
+  return rows.map((row) => {
+    const marketReturn = toNumber(row.market?.strategy_return_pct, 0);
+    const cryptoReturn = toNumber(row.crypto?.strategy_return_pct, 0);
+    const blendedReturn = normalizedMarketWeight * marketReturn + normalizedCryptoWeight * cryptoReturn;
+    const netReturn = cashWeight * 0 + blendedReturn;
+    const netPnl = runningCapital * (netReturn / 100);
+    runningCapital += netPnl;
+
+    return {
+      day: row.day,
+      marketReturn,
+      cryptoReturn,
+      blendedReturn,
+      netPnl,
+      runningCapital,
+      netReturn,
+    };
+  });
+}
+
+function formatNetPnl(value) {
   const number = toNumber(value, 0);
   if (Math.abs(number) < 1) {
-    return { label: '보합', amount: currency(0), tone: 'neutral' };
+    return { label: '순수익', amount: `+${currency(0)}`, tone: 'neutral' };
   }
   return number >= 0
-    ? { label: '수익', amount: currency(number), tone: 'good' }
-    : { label: '손실', amount: currency(Math.abs(number)), tone: 'danger' };
+    ? { label: '순수익', amount: `+${currency(number)}`, tone: 'good' }
+    : { label: '순손실', amount: `-${currency(Math.abs(number))}`, tone: 'danger' };
 }
 
 function getScale(values) {
@@ -451,6 +504,9 @@ function Simulator({ marketProject, cryptoProject }) {
   const cryptoDecision = latestDecision(cryptoProject) || {};
   const marketPerf = performanceSummary(marketProject) || {};
   const cryptoPerf = performanceSummary(cryptoProject) || {};
+  const marketReturnRows = getReturnRows(marketProject);
+  const cryptoReturnRows = getReturnRows(cryptoProject);
+  const combinedReturnRows = mergeReturnRows(marketProject, cryptoProject);
 
   const [marketWeight, setMarketWeight] = React.useState(Math.round(toNumber(marketDecision.engine?.position_size, 55)));
   const [cryptoWeight, setCryptoWeight] = React.useState(Math.round(toNumber(cryptoDecision.engine?.position_size, 0)));
@@ -460,40 +516,44 @@ function Simulator({ marketProject, cryptoProject }) {
     crypto: true,
   });
 
-  const marketDailyEdge = toNumber(marketPerf.avgStrategyReturnPct, 0);
-  const cryptoDailyEdge = toNumber(cryptoPerf.avgStrategyReturnPct, 0);
   const marketExposure = Math.max(0, Math.min(100, marketWeight)) / 100;
   const cryptoExposure = Math.max(0, Math.min(100, cryptoWeight)) / 100;
   const totalExposure = marketExposure + cryptoExposure;
   const cashExposure = totalExposure >= 1 ? 0 : 1 - totalExposure;
   const normalizedMarketWeight = totalExposure > 1 ? marketExposure / totalExposure : marketExposure;
   const normalizedCryptoWeight = totalExposure > 1 ? cryptoExposure / totalExposure : cryptoExposure;
-  const horizonDays = Math.max(1, scenarioDays);
+  const activeRows = getPeriodRows(combinedReturnRows, scenarioDays);
+  const marketRowsInPeriod = getPeriodRows(marketReturnRows, scenarioDays);
+  const cryptoRowsInPeriod = getPeriodRows(cryptoReturnRows, scenarioDays);
+  const marketTimeline = buildPnlTimeline(activeRows.map((row) => ({
+    day: row.day,
+    market: row.market,
+    crypto: null,
+  })), capital, marketExposure, 0);
+  const cryptoTimeline = buildPnlTimeline(activeRows.map((row) => ({
+    day: row.day,
+    market: null,
+    crypto: row.crypto,
+  })), capital, 0, cryptoExposure);
+  const portfolioTimeline = buildPnlTimeline(activeRows, capital, normalizedMarketWeight, normalizedCryptoWeight);
 
-  const marketProjected = capital * (cashExposure + normalizedMarketWeight * Math.pow(1 + marketDailyEdge / 100, horizonDays));
-  const cryptoProjected = capital * (cashExposure + normalizedCryptoWeight * Math.pow(1 + cryptoDailyEdge / 100, horizonDays));
-  const blendedProjected = capital * (
-    cashExposure +
-    normalizedMarketWeight * Math.pow(1 + marketDailyEdge / 100, horizonDays) +
-    normalizedCryptoWeight * Math.pow(1 + cryptoDailyEdge / 100, horizonDays)
-  );
-  const blendedDailyEdge = marketDailyEdge * normalizedMarketWeight + cryptoDailyEdge * normalizedCryptoWeight;
+  const marketFinal = marketTimeline.at(-1)?.runningCapital ?? capital;
+  const cryptoFinal = cryptoTimeline.at(-1)?.runningCapital ?? capital;
+  const portfolioFinal = portfolioTimeline.at(-1)?.runningCapital ?? capital;
 
-  const marketResult = formatPnl(marketProjected);
-  const cryptoResult = formatPnl(cryptoProjected);
-  const blendedResult = formatPnl(blendedProjected);
+  const marketResult = formatNetPnl(marketFinal - capital);
+  const cryptoResult = formatNetPnl(cryptoFinal - capital);
+  const blendedResult = formatNetPnl(portfolioFinal - capital);
 
   const presets = [7, 14, 30, 90];
-  const projectionSteps = Array.from({ length: 13 }, (_, index) => Math.round((scenarioDays * index) / 12));
-  const projectionLabels = projectionSteps.map((day) => `${day}d`);
-  const marketPath = projectionSteps.map((day) => capital * (cashExposure + normalizedMarketWeight * Math.pow(1 + marketDailyEdge / 100, day)));
-  const cryptoPath = projectionSteps.map((day) => capital * (cashExposure + normalizedCryptoWeight * Math.pow(1 + cryptoDailyEdge / 100, day)));
-  const blendedPath = projectionSteps.map((day) => capital * (
-    cashExposure +
-    normalizedMarketWeight * Math.pow(1 + marketDailyEdge / 100, day) +
-    normalizedCryptoWeight * Math.pow(1 + cryptoDailyEdge / 100, day)
-  ));
-  const cashPath = projectionSteps.map(() => capital * cashExposure);
+  const projectionLabels = activeRows.map((row) => row.day.slice(5));
+  const marketPath = marketTimeline.map((point) => point.runningCapital);
+  const cryptoPath = cryptoTimeline.map((point) => point.runningCapital);
+  const blendedPath = portfolioTimeline.map((point) => point.runningCapital);
+  const cashPath = activeRows.map(() => capital * cashExposure);
+  const marketDailyEdge = marketTimeline.length ? marketTimeline.reduce((sum, point) => sum + point.marketReturn, 0) / marketTimeline.length : 0;
+  const cryptoDailyEdge = cryptoTimeline.length ? cryptoTimeline.reduce((sum, point) => sum + point.cryptoReturn, 0) / cryptoTimeline.length : 0;
+  const blendedDailyEdge = portfolioTimeline.length ? portfolioTimeline.reduce((sum, point) => sum + point.netReturn, 0) / portfolioTimeline.length : 0;
 
   return (
     <section className="panel simulator">
@@ -501,9 +561,9 @@ function Simulator({ marketProject, cryptoProject }) {
         <div>
           <div className="eyebrow">Capital simulator</div>
           <h3>실투입 예상 수익률</h3>
-          <p className="subtle">현재 리포트의 권장 비중과 사후검증 수익률을 반영해, 현금 비중까지 포함한 예상 경로를 보여줍니다.</p>
+          <p className="subtle">실제 사후검증 수익률을 날짜별로 누적해서, 리포트대로 투자했을 때의 순손익을 보여줍니다.</p>
         </div>
-        <span className="subtle">기준: 최신 리포트의 백테스트 수익률</span>
+        <span className="subtle">기준 자산: Market = S&P 500 / KOSPI, Crypto = Bitcoin</span>
       </div>
 
       <div className="sim-grid">
@@ -586,19 +646,19 @@ function Simulator({ marketProject, cryptoProject }) {
         <div className="projection-card">
           <span>Market allocation</span>
           <strong className={marketResult.tone === 'danger' ? 'down' : 'up'}>{marketResult.label} {marketResult.amount}</strong>
-          <small>{pct((marketProjected / Math.max(capital, 1) - 1) * 100, 2)} · 최종 {compactCurrency(marketProjected)}</small>
+          <small>{pct(((marketFinal / Math.max(capital, 1)) - 1) * 100, 2)} · 최종 {compactCurrency(marketFinal)}</small>
           <small>기준: Market 백테스트 {pct(marketDailyEdge, 2)} / day</small>
         </div>
         <div className="projection-card">
           <span>Crypto allocation</span>
           <strong className={cryptoResult.tone === 'danger' ? 'down' : 'up'}>{cryptoResult.label} {cryptoResult.amount}</strong>
-          <small>{pct((cryptoProjected / Math.max(capital, 1) - 1) * 100, 2)} · 최종 {compactCurrency(cryptoProjected)}</small>
+          <small>{pct(((cryptoFinal / Math.max(capital, 1)) - 1) * 100, 2)} · 최종 {compactCurrency(cryptoFinal)}</small>
           <small>기준: Crypto 백테스트 {pct(cryptoDailyEdge, 2)} / day</small>
         </div>
         <div className="projection-card accent">
           <span>Portfolio</span>
           <strong className={blendedResult.tone === 'danger' ? 'down' : 'up'}>{blendedResult.label} {blendedResult.amount}</strong>
-          <small>{pct((blendedProjected / Math.max(capital, 1) - 1) * 100, 2)} · 최종 {compactCurrency(blendedProjected)}</small>
+          <small>{pct(((portfolioFinal / Math.max(capital, 1)) - 1) * 100, 2)} · 최종 {compactCurrency(portfolioFinal)}</small>
           <small>기준: 시장 {Math.round(normalizedMarketWeight * 100)}% + 크립토 {Math.round(normalizedCryptoWeight * 100)}% + 현금 {Math.round(cashExposure * 100)}%</small>
         </div>
       </div>
@@ -606,22 +666,22 @@ function Simulator({ marketProject, cryptoProject }) {
       <div className="calc-box">
         <div>
           <span>계산식</span>
-          <strong>포트폴리오 = 현금 + 시장 노출 + 크립토 노출</strong>
+          <strong>일별 리포트 순손익을 누적합니다.</strong>
         </div>
         <div>
           <span>Market</span>
-          <strong>{pct(marketDailyEdge, 2)} / day · 권장 {formatPercentInt(marketDecision?.engine?.position_size)}</strong>
-          <small>백테스트 평균 전략 수익률</small>
+          <strong>{pct(marketDailyEdge, 2)} / day</strong>
+          <small>{marketReturnRows.length}개 샘플 · {marketDecision?.engine?.position_size ?? '-'}% 권장</small>
         </div>
         <div>
           <span>Crypto</span>
-          <strong>{pct(cryptoDailyEdge, 2)} / day · 권장 {formatPercentInt(cryptoDecision?.engine?.position_size)}</strong>
-          <small>백테스트 평균 전략 수익률</small>
+          <strong>{pct(cryptoDailyEdge, 2)} / day</strong>
+          <small>{cryptoReturnRows.length}개 샘플 · {cryptoDecision?.engine?.position_size ?? '-'}% 권장</small>
         </div>
         <div>
           <span>Blended</span>
-          <strong>{pct(blendedDailyEdge, 2)} / day · {scenarioDays}일 시나리오</strong>
-          <small>현금 비중을 포함해서 계산하므로, 추천 비중이 낮으면 낙폭도 줄어듭니다.</small>
+          <strong>{pct(blendedDailyEdge, 2)} / day · {activeRows.length}개 샘플</strong>
+          <small>현금 포함 후 일자별 순손익을 누적합니다.</small>
         </div>
         <div>
           <span>Cash</span>
@@ -632,8 +692,8 @@ function Simulator({ marketProject, cryptoProject }) {
 
       <div className="chart-stack">
         <FancyChart
-          title="예상 자산 경로"
-          subtitle="기준금액부터 시나리오 기간까지 선택 자산들의 예상 경로"
+          title="리포트별 누적 손익"
+          subtitle="날짜별 사후검증 수익률을 누적한 순손익 경로"
           series={[
             {
               name: 'Cash',
@@ -646,7 +706,7 @@ function Simulator({ marketProject, cryptoProject }) {
             },
             ...(selectedAssets.market
               ? [{
-                  name: 'Market',
+                  name: 'Market strategy',
                   color: '#52d6a6',
                   values: marketPath,
                   labels: projectionLabels,
@@ -657,7 +717,7 @@ function Simulator({ marketProject, cryptoProject }) {
               : []),
             ...(selectedAssets.crypto
               ? [{
-                  name: 'Crypto',
+                  name: 'Crypto strategy',
                   color: '#ffbf63',
                   values: cryptoPath,
                   labels: projectionLabels,
@@ -681,14 +741,67 @@ function Simulator({ marketProject, cryptoProject }) {
         />
       </div>
 
+      <div className="backtest-grid">
+        <div className="backtest-card">
+          <span>Market daily rows</span>
+          <strong>{marketRowsInPeriod.length}개</strong>
+          <small>기준 자산: S&P 500 / KOSPI</small>
+        </div>
+        <div className="backtest-card">
+          <span>Crypto daily rows</span>
+          <strong>{cryptoRowsInPeriod.length}개</strong>
+          <small>기준 자산: Bitcoin</small>
+        </div>
+      </div>
+
+      <div className="daily-return-table">
+        <div className="daily-return-head">
+          <div>
+            <h4>일자별 순손익</h4>
+            <p>리포트 날짜별로 실제 백테스트 수익률을 누적한 결과입니다.</p>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>날짜</th>
+              <th>Market</th>
+              <th>Crypto</th>
+              <th>Portfolio</th>
+            </tr>
+          </thead>
+          <tbody>
+            {activeRows.map((row, index) => {
+              const marketPoint = marketTimeline[index];
+              const cryptoPoint = cryptoTimeline[index];
+              const portfolioPoint = portfolioTimeline[index];
+              return (
+                <tr key={row.day}>
+                  <td>{row.day}</td>
+                  <td className={marketPoint?.netPnl >= 0 ? 'up' : 'down'}>
+                    {marketPoint ? `${marketPoint.netPnl >= 0 ? '+' : '-'}${currency(Math.abs(marketPoint.netPnl))}` : '-'}
+                  </td>
+                  <td className={cryptoPoint?.netPnl >= 0 ? 'up' : 'down'}>
+                    {cryptoPoint ? `${cryptoPoint.netPnl >= 0 ? '+' : '-'}${currency(Math.abs(cryptoPoint.netPnl))}` : '-'}
+                  </td>
+                  <td className={portfolioPoint?.netPnl >= 0 ? 'up' : 'down'}>
+                    {portfolioPoint ? `${portfolioPoint.netPnl >= 0 ? '+' : '-'}${currency(Math.abs(portfolioPoint.netPnl))}` : '-'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
       <div className="risk-band">
         <div>
-          <span>현금 포함 기대수익률</span>
+          <span>현금 포함 순손익률</span>
           <strong>{pct(blendedDailyEdge, 2)} / day</strong>
         </div>
         <div>
-          <span>시나리오 끝 예상금액</span>
-          <strong>{compactCurrency(blendedProjected)}</strong>
+          <span>시나리오 끝 순손익</span>
+          <strong>{`${(portfolioTimeline.at(-1)?.netPnl || 0) >= 0 ? '+' : '-'}${currency(Math.abs(portfolioTimeline.at(-1)?.netPnl || 0))}`}</strong>
         </div>
       </div>
     </section>
