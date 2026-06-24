@@ -12,6 +12,10 @@ function cleanText(value, fallback = '-') {
   return text && text.toLowerCase() !== 'unknown' ? text : fallback;
 }
 
+function isEmptyValue(value) {
+  return value === null || value === undefined || String(value).trim() === '';
+}
+
 function toNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
@@ -80,6 +84,10 @@ function performanceSummary(project) {
   };
 }
 
+function slugId(value) {
+  return String(value || '').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+}
+
 function reportRows(project) {
   return (project.decisions || [])
     .map((item) => {
@@ -111,6 +119,14 @@ function mergeDailyRows(marketProject, cryptoProject) {
   }));
 }
 
+function buildTrendSeries(rows, key) {
+  return {
+    labels: rows.map((row) => row.day.slice(5)),
+    market: rows.map((row) => toNumber(row.market?.[key], 0)),
+    crypto: rows.map((row) => toNumber(row.crypto?.[key], 0)),
+  };
+}
+
 function projectLabel(projectId) {
   return projectId === 'market-agent' ? 'Market Agent' : 'Crypto Agent';
 }
@@ -128,6 +144,87 @@ function formatPnl(value) {
   return number >= 0
     ? { label: '수익', amount: currency(number), tone: 'good' }
     : { label: '손실', amount: currency(Math.abs(number)), tone: 'danger' };
+}
+
+function buildLinePoints(values, width = 320, height = 180, padding = 20) {
+  if (!values.length) return { points: '', coords: [], min: 0, max: 0 };
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const usableWidth = width - padding * 2;
+  const usableHeight = height - padding * 2;
+  const coords = values.map((value, index) => {
+    const x = padding + (usableWidth * index) / Math.max(values.length - 1, 1);
+    const y = padding + usableHeight - ((value - min) / range) * usableHeight;
+    return { x, y, value };
+  });
+  const points = coords.map((point) => `${point.x},${point.y}`).join(' ');
+  return { points, coords, min, max };
+}
+
+function MiniChart({ title, subtitle, series, formatValue, compact = false }) {
+  const width = compact ? 320 : 640;
+  const height = compact ? 200 : 240;
+  const allValues = series.flatMap((item) => item.values);
+  const min = Math.min(...allValues);
+  const max = Math.max(...allValues);
+  const range = max - min || 1;
+  const labels = series[0]?.labels || [];
+  return (
+    <div className="chart-card">
+      <div className="chart-head">
+        <div>
+          <h4>{title}</h4>
+          {subtitle ? <p>{subtitle}</p> : null}
+        </div>
+        <div className="chart-legend">
+          {series.map((item) => (
+            <span key={item.name}>
+              <i style={{ background: item.color }} />
+              {item.name}
+            </span>
+          ))}
+        </div>
+      </div>
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title} className="line-chart">
+        <defs>
+          <linearGradient id={`grid-${slugId(title)}`} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.12)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
+          </linearGradient>
+        </defs>
+        {[0, 0.25, 0.5, 0.75, 1].map((tick) => {
+          const y = 20 + (height - 40) * tick;
+          return <line key={tick} x1="20" x2={width - 20} y1={y} y2={y} className="chart-line-grid" />;
+        })}
+        {series.map((item) => {
+          const { points, coords } = buildLinePoints(item.values, width, height);
+          return (
+            <g key={item.name}>
+              <polyline points={points} fill="none" stroke={item.color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+              {coords.map((point, index) => (
+                <circle key={`${item.name}-${index}`} cx={point.x} cy={point.y} r="3.5" fill={item.color} />
+              ))}
+            </g>
+          );
+        })}
+        {labels.map((label, index) => {
+          const x = 20 + ((width - 40) * index) / Math.max(labels.length - 1, 1);
+          return (
+            <text key={label} x={x} y={height - 6} className="chart-label" textAnchor="middle">
+              {label}
+            </text>
+          );
+        })}
+        <text x="12" y="24" className="chart-rail">
+          {formatValue(max)}
+        </text>
+        <text x="12" y={height - 22} className="chart-rail">
+          {formatValue(min)}
+        </text>
+      </svg>
+    </div>
+  );
 }
 
 function MetricCard({ label, value, caption, tone = 'neutral' }) {
@@ -195,12 +292,15 @@ function ProjectCard({ project }) {
 }
 
 function DataTable({ rows, startDate, endDate, onStartDate, onEndDate }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const visibleRows = expanded || rows.length <= 6 ? rows : rows.slice(0, 3).concat({ __ellipsis: true }, rows.slice(-3));
   return (
     <section className="panel table-panel">
       <div className="section-head">
         <div>
           <div className="eyebrow">Decision table</div>
           <h3>날짜별 점수와 신뢰도</h3>
+          <p className="subtle">기간을 좁혀서 보고, 길면 접어둘 수 있습니다.</p>
         </div>
         <div className="date-filters">
           <label>
@@ -219,27 +319,41 @@ function DataTable({ rows, startDate, endDate, onStartDate, onEndDate }) {
           <thead>
             <tr>
               <th>날짜</th>
-              <th>마켓 verdict</th>
+              <th>마켓 판정</th>
               <th>점수</th>
               <th>신뢰도</th>
-              <th>크립토 verdict</th>
+              <th>크립토 판정</th>
               <th>점수</th>
               <th>신뢰도</th>
             </tr>
           </thead>
           <tbody>
-            {rows.length > 0 ? (
-              rows.map((row) => (
-                <tr key={row.day}>
-                  <td>{row.day}</td>
-                  <td>{verdictLabel(row.market?.verdict)}</td>
-                  <td>{cleanText(row.market?.score)}</td>
-                  <td>{cleanText(row.market?.confidence)}</td>
-                  <td>{verdictLabel(row.crypto?.verdict)}</td>
-                  <td>{cleanText(row.crypto?.score)}</td>
-                  <td>{cleanText(row.crypto?.confidence)}</td>
-                </tr>
-              ))
+            {visibleRows.length > 0 ? (
+              visibleRows.map((row) =>
+                row.__ellipsis ? (
+                  <tr key="ellipsis" className="ellipsis-row">
+                    <td colSpan="7">...</td>
+                  </tr>
+                ) : (
+                  <tr key={row.day}>
+                    <td className="date-cell">{row.day}</td>
+                    <td>
+                      <span className={`cell-pill cell-${verdictTone(row.market?.verdict)}`}>
+                        {verdictLabel(row.market?.verdict)}
+                      </span>
+                    </td>
+                    <td className="num-cell">{cleanText(row.market?.score)}</td>
+                    <td className="num-cell">{cleanText(row.market?.confidence)}</td>
+                    <td>
+                      <span className={`cell-pill cell-${verdictTone(row.crypto?.verdict)}`}>
+                        {verdictLabel(row.crypto?.verdict)}
+                      </span>
+                    </td>
+                    <td className="num-cell">{cleanText(row.crypto?.score)}</td>
+                    <td className="num-cell">{cleanText(row.crypto?.confidence)}</td>
+                  </tr>
+                )
+              )
             ) : (
               <tr>
                 <td colSpan="7" className="empty-cell">
@@ -250,6 +364,14 @@ function DataTable({ rows, startDate, endDate, onStartDate, onEndDate }) {
           </tbody>
         </table>
       </div>
+
+      {rows.length > 6 ? (
+        <div className="table-toggle">
+          <button type="button" className="preset" onClick={() => setExpanded((v) => !v)}>
+            {expanded ? '간단히 보기' : `전체 보기 (${rows.length})`}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -259,6 +381,10 @@ function Simulator({ marketProject, cryptoProject }) {
   const [marketWeight, setMarketWeight] = React.useState(50);
   const [cryptoWeight, setCryptoWeight] = React.useState(50);
   const [scenarioDays, setScenarioDays] = React.useState(14);
+  const [selectedAssets, setSelectedAssets] = React.useState({
+    market: true,
+    crypto: true,
+  });
 
   const marketDecision = latestDecision(marketProject) || {};
   const cryptoDecision = latestDecision(cryptoProject) || {};
@@ -285,6 +411,30 @@ function Simulator({ marketProject, cryptoProject }) {
   const blendedResult = formatPnl(blendedProjected);
 
   const presets = [7, 14, 30, 90];
+  const projectionSteps = Array.from({ length: 13 }, (_, index) => Math.round((scenarioDays * index) / 12));
+  const projectionLabels = projectionSteps.map((day) => `${day}d`);
+  const chartSeries = [
+    { name: '기준', color: '#8aa8ff', values: projectionSteps.map(() => capital) },
+    ...(selectedAssets.market
+      ? [{
+          name: 'Market',
+          color: '#52d6a6',
+          values: projectionSteps.map((day) => capital * (Math.pow(1 + marketEdge / 100, day / 7) - 1) + capital),
+        }]
+      : []),
+    ...(selectedAssets.crypto
+      ? [{
+          name: 'Crypto',
+          color: '#ffbf63',
+          values: projectionSteps.map((day) => capital * (Math.pow(1 + cryptoEdge / 100, day / 7) - 1) + capital),
+        }]
+      : []),
+    {
+      name: 'Blended',
+      color: '#ff718f',
+      values: projectionSteps.map((day) => capital * (Math.pow(1 + ((marketEdge * marketShare + cryptoEdge * cryptoShare) / 100), day / 7) - 1) + capital),
+    },
+  ];
 
   return (
     <section className="panel simulator">
@@ -292,8 +442,9 @@ function Simulator({ marketProject, cryptoProject }) {
         <div>
           <div className="eyebrow">Capital simulator</div>
           <h3>실투입 예상 수익률</h3>
+          <p className="subtle">기준 자산은 현재 리포트의 보정 기대수익률로 계산합니다.</p>
         </div>
-        <span className="subtle">시나리오 기간과 비중을 쉽게 바꿀 수 있게 했습니다.</span>
+        <span className="subtle">기준 자산: 최신 마켓/크립토 리포트</span>
       </div>
 
       <div className="sim-grid">
@@ -361,22 +512,56 @@ function Simulator({ marketProject, cryptoProject }) {
         ))}
       </div>
 
+      <div className="asset-select">
+        <label>
+          <input
+            type="checkbox"
+            checked={selectedAssets.market}
+            onChange={(e) => setSelectedAssets((prev) => ({ ...prev, market: e.target.checked }))}
+          />
+          Market
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={selectedAssets.crypto}
+            onChange={(e) => setSelectedAssets((prev) => ({ ...prev, crypto: e.target.checked }))}
+          />
+          Crypto
+        </label>
+      </div>
+
       <div className="projection-grid">
         <div className="projection-card">
           <span>Market only</span>
           <strong className={marketResult.tone === 'danger' ? 'down' : 'up'}>{marketResult.label} {marketResult.amount}</strong>
           <small>{pct((marketProjected / Math.max(capital, 1) - 1) * 100, 2)} · 최종 {compactCurrency(marketProjected)}</small>
+          <small>기준: Market 리포트</small>
         </div>
         <div className="projection-card">
           <span>Crypto only</span>
           <strong className={cryptoResult.tone === 'danger' ? 'down' : 'up'}>{cryptoResult.label} {cryptoResult.amount}</strong>
           <small>{pct((cryptoProjected / Math.max(capital, 1) - 1) * 100, 2)} · 최종 {compactCurrency(cryptoProjected)}</small>
+          <small>기준: Crypto 리포트</small>
         </div>
         <div className="projection-card accent">
           <span>Blended portfolio</span>
           <strong className={blendedResult.tone === 'danger' ? 'down' : 'up'}>{blendedResult.label} {blendedResult.amount}</strong>
           <small>{pct((blendedProjected / Math.max(capital, 1) - 1) * 100, 2)} · 최종 {compactCurrency(blendedProjected)}</small>
+          <small>기준: 선택 비중의 혼합</small>
         </div>
+      </div>
+
+      <div className="chart-stack">
+        <MiniChart
+          title="예상 자산 경로"
+          subtitle="기준금액부터 시나리오 기간까지 선택 자산들의 예상 경로"
+          series={chartSeries.map((item) => ({
+            ...item,
+            labels: projectionLabels,
+          }))}
+          formatValue={(value) => compactCurrency(value)}
+        />
       </div>
 
       <div className="risk-band">
@@ -403,6 +588,7 @@ function BacktestSummary({ marketProject, cryptoProject }) {
         <div>
           <div className="eyebrow">Backtest</div>
           <h3>사후 검증</h3>
+          <p className="subtle">이건 실제 매매내역이 아니라, 지난 리포트가 다음 리포트 결과를 얼마나 잘 맞췄는지 보는 검증입니다.</p>
         </div>
       </div>
       <div className="backtest-grid">
@@ -419,6 +605,13 @@ function BacktestSummary({ marketProject, cryptoProject }) {
           <small>{crypto?.maxDrawdown || '-'}</small>
         </div>
       </div>
+      <div className="backtest-note">
+        <strong>쉽게 말하면</strong>
+        <p>
+          점수가 좋았던 날이 실제로도 좋았는지, 그리고 그 판단을 따라갔을 때 결과가 어땠는지를 확인하는 기록입니다.
+          현재 화면의 실투입 예상 수익률은 이 사후검증의 보정값을 현재 리포트에 적용해서 추정합니다.
+        </p>
+      </div>
     </section>
   );
 }
@@ -426,6 +619,8 @@ function BacktestSummary({ marketProject, cryptoProject }) {
 function App() {
   const [marketProject, cryptoProject] = snapshot.projects;
   const combinedRows = mergeDailyRows(marketProject, cryptoProject);
+  const trendScore = buildTrendSeries(combinedRows, 'score');
+  const trendConfidence = buildTrendSeries(combinedRows, 'confidence');
   const [startDate, setStartDate] = React.useState(combinedRows[0]?.day || '');
   const [endDate, setEndDate] = React.useState(combinedRows[combinedRows.length - 1]?.day || '');
 
@@ -469,6 +664,38 @@ function App() {
       <section className="deck">
         <ProjectCard project={marketProject} />
         <ProjectCard project={cryptoProject} />
+      </section>
+
+      <section className="panel chart-panel">
+        <div className="section-head">
+          <div>
+            <div className="eyebrow">Trend charts</div>
+            <h3>날짜별 점수와 신뢰도</h3>
+            <p className="subtle">표와 같이 보면 흐름이 훨씬 빨리 보입니다.</p>
+          </div>
+        </div>
+        <div className="chart-grid">
+          <MiniChart
+            title="점수 추이"
+            subtitle="마켓과 크립토의 날짜별 점수"
+            series={[
+              { name: 'Market', color: '#52d6a6', values: trendScore.market, labels: combinedRows.map((row) => row.day.slice(5)) },
+              { name: 'Crypto', color: '#ffbf63', values: trendScore.crypto, labels: combinedRows.map((row) => row.day.slice(5)) },
+            ]}
+            formatValue={(value) => String(Math.round(value))}
+            compact
+          />
+          <MiniChart
+            title="신뢰도 추이"
+            subtitle="마켓과 크립토의 날짜별 신뢰도"
+            series={[
+              { name: 'Market', color: '#8aa8ff', values: trendConfidence.market, labels: combinedRows.map((row) => row.day.slice(5)) },
+              { name: 'Crypto', color: '#ff718f', values: trendConfidence.crypto, labels: combinedRows.map((row) => row.day.slice(5)) },
+            ]}
+            formatValue={(value) => String(Math.round(value))}
+            compact
+          />
+        </div>
       </section>
 
       <DataTable
