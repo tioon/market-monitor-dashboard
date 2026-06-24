@@ -291,11 +291,11 @@ function FancyChart({
                 d={geom.path}
                 fill="none"
                 stroke={item.color}
-                strokeWidth={item.strokeWidth || 2.2}
+                strokeWidth={item.strokeWidth || 1.45}
                 strokeLinejoin="round"
                 strokeLinecap="round"
               />
-              {lastPoint ? <circle cx={lastPoint.x} cy={lastPoint.y} r="3.8" fill={item.color} stroke="#08111d" strokeWidth="2" /> : null}
+              {lastPoint ? <circle cx={lastPoint.x} cy={lastPoint.y} r="2.6" fill={item.color} stroke="#08111d" strokeWidth="1.5" /> : null}
             </g>
           );
         })}
@@ -642,7 +642,7 @@ function Simulator({ marketProject, cryptoProject }) {
               labels: projectionLabels,
               axis: 'left',
               area: false,
-              strokeWidth: 1.4,
+              strokeWidth: 1.1,
             },
             ...(selectedAssets.market
               ? [{
@@ -652,7 +652,7 @@ function Simulator({ marketProject, cryptoProject }) {
                   labels: projectionLabels,
                   axis: 'left',
                   area: false,
-                  strokeWidth: 2.1,
+                  strokeWidth: 1.35,
                 }]
               : []),
             ...(selectedAssets.crypto
@@ -663,7 +663,7 @@ function Simulator({ marketProject, cryptoProject }) {
                   labels: projectionLabels,
                   axis: 'left',
                   area: false,
-                  strokeWidth: 2.1,
+                  strokeWidth: 1.35,
                 }]
               : []),
             {
@@ -674,7 +674,7 @@ function Simulator({ marketProject, cryptoProject }) {
               axis: 'left',
               area: true,
               areaOpacity: 0.12,
-              strokeWidth: 2.8,
+              strokeWidth: 1.6,
             },
           ]}
           formatValue={(value) => compactCurrency(value)}
@@ -796,10 +796,10 @@ function App() {
           title="Trend"
           subtitle="마켓 점수와 신뢰도, 크립토 점수와 신뢰도를 한 장에서 비교"
           series={[
-            { name: 'Market score', color: '#52d6a6', values: trendScore.market, labels: trendLabels, axis: 'left', area: true, strokeWidth: 3.2 },
-            { name: 'Crypto score', color: '#ffbf63', values: trendScore.crypto, labels: trendLabels, axis: 'left', area: false, strokeWidth: 2.2 },
-            { name: 'Market confidence', color: '#8aa8ff', values: trendConfidence.market, labels: trendLabels, axis: 'right', area: true, areaOpacity: 0.16, strokeWidth: 2.8 },
-            { name: 'Crypto confidence', color: '#ff718f', values: trendConfidence.crypto, labels: trendLabels, axis: 'right', area: false, strokeWidth: 2.2 },
+            { name: 'Market score', color: '#52d6a6', values: trendScore.market, labels: trendLabels, axis: 'left', area: true, areaOpacity: 0.1, strokeWidth: 1.8 },
+            { name: 'Crypto score', color: '#ffbf63', values: trendScore.crypto, labels: trendLabels, axis: 'left', area: false, strokeWidth: 1.35 },
+            { name: 'Market confidence', color: '#8aa8ff', values: trendConfidence.market, labels: trendLabels, axis: 'right', area: true, areaOpacity: 0.08, strokeWidth: 1.55 },
+            { name: 'Crypto confidence', color: '#ff718f', values: trendConfidence.crypto, labels: trendLabels, axis: 'right', area: false, strokeWidth: 1.3 },
           ]}
           formatValue={(value) => `${Math.round(value)}`}
           formatValueRight={(value) => `${Math.round(value)}%`}

@@ -181,12 +181,12 @@ button {
   border-radius: 22px;
   padding: 18px 18px 14px;
   background:
-    linear-gradient(180deg, rgba(9, 15, 24, 0.96), rgba(10, 16, 26, 0.92)),
-    radial-gradient(circle at top right, rgba(135, 174, 254, 0.08), transparent 32%);
-  border: 1px solid rgba(164, 188, 233, 0.12);
+    linear-gradient(180deg, rgba(8, 13, 20, 0.98), rgba(9, 15, 24, 0.94)),
+    radial-gradient(circle at top right, rgba(135, 174, 254, 0.05), transparent 34%);
+  border: 1px solid rgba(164, 188, 233, 0.08);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.03),
-    0 18px 48px rgba(0, 0, 0, 0.18);
+    inset 0 1px 0 rgba(255, 255, 255, 0.025),
+    0 12px 30px rgba(0, 0, 0, 0.12);
 }
 
 .chart-head {
@@ -220,21 +220,21 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--muted);
+  color: #a1b2cd;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.72rem;
-  padding: 6px 9px;
+  font-size: 0.7rem;
+  padding: 5px 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.035);
 }
 
 .chart-legend i {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
   display: inline-block;
-  box-shadow: 0 0 12px currentColor;
+  box-shadow: none;
 }
 
 .line-chart {
@@ -245,14 +245,14 @@ button {
 }
 
 .chart-line-grid {
-  stroke: rgba(255, 255, 255, 0.05);
+  stroke: rgba(255, 255, 255, 0.035);
   stroke-width: 1;
 }
 
 .chart-label,
 .chart-rail {
-  fill: rgba(235, 242, 255, 0.68);
-  font-size: 9.5px;
+  fill: rgba(235, 242, 255, 0.6);
+  font-size: 9px;
   font-family: 'IBM Plex Mono', monospace;
 }
 
@@ -274,8 +274,8 @@ button {
 .calc-box > div {
   padding: 14px 16px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .calc-box span {
