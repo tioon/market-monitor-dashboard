@@ -33,3 +33,8 @@ If AWS access is unavailable, the build falls back to the committed snapshot.
 npm run build
 ```
 
+## Publish
+
+The deployed GitHub Pages site is served from the committed `docs/` folder.
+After rebuilding, copy the refreshed `dist/` output into `docs/` and push the
+branch.
