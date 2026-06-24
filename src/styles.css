@@ -181,10 +181,12 @@ button {
   border-radius: 22px;
   padding: 18px 18px 14px;
   background:
-    radial-gradient(circle at top right, rgba(135, 174, 254, 0.08), transparent 30%),
-    rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    linear-gradient(180deg, rgba(9, 15, 24, 0.96), rgba(10, 16, 26, 0.92)),
+    radial-gradient(circle at top right, rgba(135, 174, 254, 0.08), transparent 32%);
+  border: 1px solid rgba(164, 188, 233, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 18px 48px rgba(0, 0, 0, 0.18);
 }
 
 .chart-head {
@@ -243,24 +245,59 @@ button {
 }
 
 .chart-line-grid {
-  stroke: rgba(255, 255, 255, 0.055);
+  stroke: rgba(255, 255, 255, 0.05);
   stroke-width: 1;
-  stroke-dasharray: 4 6;
 }
 
 .chart-label,
 .chart-rail {
-  fill: rgba(235, 242, 255, 0.74);
+  fill: rgba(235, 242, 255, 0.68);
   font-size: 9.5px;
   font-family: 'IBM Plex Mono', monospace;
 }
 
-.chart-right {
+.chart-axis-left {
+  text-anchor: start;
+}
+
+.chart-axis-right {
   text-anchor: end;
 }
 
-.chart-card .chart-rail.chart-right {
-  text-anchor: start;
+.calc-box {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.calc-box > div {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.calc-box span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.calc-box strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.calc-box small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
 }
 
 .workspace {
@@ -741,6 +778,10 @@ tbody tr:hover td {
   }
 
   .chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .calc-box {
     grid-template-columns: 1fr;
   }
 }

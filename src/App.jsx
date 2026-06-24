@@ -167,29 +167,21 @@ function buildChartPoints(values, width, height, padding, min, max) {
   });
 }
 
-function buildSmoothPath(points) {
+function buildLinePath(points) {
   if (!points.length) return '';
   if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
-  let path = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 1; i < points.length; i += 1) {
-    const prev = points[i - 1];
-    const curr = points[i];
-    const midX = (prev.x + curr.x) / 2;
-    const midY = (prev.y + curr.y) / 2;
-    path += ` Q ${prev.x} ${prev.y} ${midX} ${midY}`;
-  }
-  const last = points[points.length - 1];
-  path += ` T ${last.x} ${last.y}`;
-  return path;
+  return points
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
+    .join(' ');
 }
 
 function buildAreaPath(points, height, padding) {
   if (!points.length) return '';
   const baseY = height - padding;
-  const smooth = buildSmoothPath(points);
+  const line = buildLinePath(points);
   const last = points[points.length - 1];
   const first = points[0];
-  return `${smooth} L ${last.x} ${baseY} L ${first.x} ${baseY} Z`;
+  return `${line} L ${last.x} ${baseY} L ${first.x} ${baseY} Z`;
 }
 
 function getTickValues(min, max, count = 4) {
@@ -225,7 +217,7 @@ function FancyChart({
     const points = buildChartPoints(item.values, width, height, padding, scale.min, scale.max);
     return {
       points,
-      path: buildSmoothPath(points),
+      path: buildLinePath(points),
       area: buildAreaPath(points, height, padding),
       scale,
     };
@@ -251,47 +243,55 @@ function FancyChart({
         <defs>
           {series.map((item) => {
             const fillId = `fill-${slugId(title)}-${slugId(item.name)}`;
-            const glowId = `glow-${slugId(title)}-${slugId(item.name)}`;
             return (
-              <React.Fragment key={item.name}>
-                <linearGradient id={fillId} x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor={item.color} stopOpacity={item.areaOpacity ?? 0.28} />
-                  <stop offset="100%" stopColor={item.color} stopOpacity={0} />
-                </linearGradient>
-                <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
-                  <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor={item.color} floodOpacity="0.35" />
-                </filter>
-              </React.Fragment>
+              <linearGradient key={item.name} id={fillId} x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor={item.color} stopOpacity={item.areaOpacity ?? 0.14} />
+                <stop offset="100%" stopColor={item.color} stopOpacity={0} />
+              </linearGradient>
             );
           })}
         </defs>
         {ticks.map((tickValue, index) => {
           const y = padding + ((height - padding * 2) * (ticks.length - 1 - index)) / (ticks.length - 1);
-          return <line key={tickValue} x1={padding} x2={width - padding} y1={y} y2={y} className="chart-line-grid" />;
+          const leftText = formatValue(tickValue);
+          const rightText = dualAxis && rightSeries.length
+            ? formatValueRight
+              ? formatValueRight(rightScale.min + ((rightScale.max - rightScale.min) * (ticks.length - 1 - index)) / (ticks.length - 1))
+              : formatValue(rightScale.min + ((rightScale.max - rightScale.min) * (ticks.length - 1 - index)) / (ticks.length - 1))
+            : null;
+          return (
+            <g key={tickValue}>
+              <line x1={padding} x2={width - padding} y1={y} y2={y} className="chart-line-grid" />
+              <text x={8} y={y + 3} className="chart-rail chart-axis-left">
+                {leftText}
+              </text>
+              {rightText ? (
+                <text x={width - 8} y={y + 3} className="chart-rail chart-axis-right">
+                  {rightText}
+                </text>
+              ) : null}
+            </g>
+          );
         })}
         {series.map((item) => {
           const geom = geometryFor(item);
           const fillId = `fill-${slugId(title)}-${slugId(item.name)}`;
-          const glowId = `glow-${slugId(title)}-${slugId(item.name)}`;
           const lastPoint = geom.points[geom.points.length - 1];
           return (
-            <g key={item.name} filter={`url(#${glowId})`}>
+            <g key={item.name}>
               {item.area !== false ? <path d={geom.area} fill={`url(#${fillId})`} stroke="none" /> : null}
-              <path d={geom.path} fill="none" stroke={item.color} strokeWidth={item.strokeWidth || 3} strokeLinejoin="round" strokeLinecap="round" />
-              {lastPoint ? <circle cx={lastPoint.x} cy={lastPoint.y} r="4.5" fill={item.color} stroke="#08111d" strokeWidth="2" /> : null}
+              <path
+                d={geom.path}
+                fill="none"
+                stroke={item.color}
+                strokeWidth={item.strokeWidth || 2.2}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+              {lastPoint ? <circle cx={lastPoint.x} cy={lastPoint.y} r="3.8" fill={item.color} stroke="#08111d" strokeWidth="2" /> : null}
             </g>
           );
         })}
-        {dualAxis && rightSeries.length ? (
-          <>
-            <text x={width - padding + 8} y="24" className="chart-rail chart-right">
-              {formatValueRight ? formatValueRight(rightScale.max) : formatValue(rightScale.max)}
-            </text>
-            <text x={width - padding + 8} y={height - 20} className="chart-rail chart-right">
-              {formatValueRight ? formatValueRight(rightScale.min) : formatValue(rightScale.min)}
-            </text>
-          </>
-        ) : null}
         {labels.map((label, index) => {
           const x = padding + ((width - padding * 2) * index) / Math.max(labels.length - 1, 1);
           return (
@@ -300,12 +300,6 @@ function FancyChart({
             </text>
           );
         })}
-        <text x="14" y="24" className="chart-rail">
-          {leftLabel || formatValue(leftScale.max)}
-        </text>
-        <text x="14" y={height - 20} className="chart-rail">
-          {leftLabel ? '' : formatValue(leftScale.min)}
-        </text>
       </svg>
     </div>
   );
@@ -473,6 +467,7 @@ function Simulator({ marketProject, cryptoProject }) {
   const marketProjected = projectedReturn(capital, marketShare, 0, marketEdge, 0, cycleFactor);
   const cryptoProjected = projectedReturn(capital, 0, cryptoShare, 0, cryptoEdge, cycleFactor);
   const blendedProjected = projectedReturn(capital, marketShare, cryptoShare, marketEdge, cryptoEdge, cycleFactor);
+  const blendedEdge = marketEdge * marketShare + cryptoEdge * cryptoShare;
 
   const marketResult = formatPnl(marketProjected);
   const cryptoResult = formatPnl(cryptoProjected);
@@ -601,6 +596,28 @@ function Simulator({ marketProject, cryptoProject }) {
         </div>
       </div>
 
+      <div className="calc-box">
+        <div>
+          <span>계산식</span>
+          <strong>기대수익률 = 기대수익률 보정치 × 신뢰도 × 비중 × 기간</strong>
+        </div>
+        <div>
+          <span>Market</span>
+          <strong>{pct(toNumber(marketDecision.calibration?.expected_return_pct, 0), 2)} × {marketMultiplier.toFixed(2)} × {(marketConfidence * 100).toFixed(0)}%</strong>
+          <small>보정 기대수익률 {pct(marketEdge, 2)}</small>
+        </div>
+        <div>
+          <span>Crypto</span>
+          <strong>{pct(toNumber(cryptoDecision.calibration?.expected_return_pct, 0), 2)} × {cryptoMultiplier.toFixed(2)} × {(cryptoConfidence * 100).toFixed(0)}%</strong>
+          <small>보정 기대수익률 {pct(cryptoEdge, 2)}</small>
+        </div>
+        <div>
+          <span>Blended</span>
+          <strong>{pct(blendedEdge, 2)} · {scenarioDays}일 시나리오</strong>
+          <small>그래서 둘 다 음수면 최종 경로도 계속 아래로 내려갑니다.</small>
+        </div>
+      </div>
+
       <div className="chart-stack">
         <FancyChart
           title="예상 자산 경로"
@@ -608,12 +625,12 @@ function Simulator({ marketProject, cryptoProject }) {
           series={[
             {
               name: 'Base',
-              color: '#8aa8ff',
+              color: '#7e8aa6',
               values: projectionSteps.map(() => capital),
               labels: projectionLabels,
               axis: 'left',
               area: false,
-              strokeWidth: 1.8,
+              strokeWidth: 1.4,
             },
             ...(selectedAssets.market
               ? [{
@@ -623,7 +640,7 @@ function Simulator({ marketProject, cryptoProject }) {
                   labels: projectionLabels,
                   axis: 'left',
                   area: false,
-                  strokeWidth: 2.4,
+                  strokeWidth: 2.1,
                 }]
               : []),
             ...(selectedAssets.crypto
@@ -634,7 +651,7 @@ function Simulator({ marketProject, cryptoProject }) {
                   labels: projectionLabels,
                   axis: 'left',
                   area: false,
-                  strokeWidth: 2.4,
+                  strokeWidth: 2.1,
                 }]
               : []),
             {
@@ -644,8 +661,8 @@ function Simulator({ marketProject, cryptoProject }) {
               labels: projectionLabels,
               axis: 'left',
               area: true,
-              areaOpacity: 0.14,
-              strokeWidth: 3.2,
+              areaOpacity: 0.12,
+              strokeWidth: 2.8,
             },
           ]}
           formatValue={(value) => compactCurrency(value)}
