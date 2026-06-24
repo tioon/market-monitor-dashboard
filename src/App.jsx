@@ -376,15 +376,13 @@ function ProjectCard({ project }) {
 }
 
 function DataTable({ rows, startDate, endDate, onStartDate, onEndDate }) {
-  const [expanded, setExpanded] = React.useState(false);
-  const visibleRows = expanded || rows.length <= 6 ? rows : rows.slice(0, 3).concat({ __ellipsis: true }, rows.slice(-3));
   return (
     <section className="panel table-panel">
       <div className="section-head">
         <div>
           <div className="eyebrow">Decision table</div>
           <h3>날짜별 점수와 신뢰도</h3>
-          <p className="subtle">기간을 좁혀서 보고, 길면 접어둘 수 있습니다.</p>
+          <p className="subtle">기간을 좁혀서 볼 수 있고, 목록은 기본적으로 전체 이력을 표시합니다.</p>
         </div>
         <div className="date-filters">
           <label>
@@ -412,32 +410,26 @@ function DataTable({ rows, startDate, endDate, onStartDate, onEndDate }) {
             </tr>
           </thead>
           <tbody>
-            {visibleRows.length > 0 ? (
-              visibleRows.map((row) =>
-                row.__ellipsis ? (
-                  <tr key="ellipsis" className="ellipsis-row">
-                    <td colSpan="7">...</td>
-                  </tr>
-                ) : (
-                  <tr key={row.day}>
-                    <td className="date-cell">{row.day}</td>
-                    <td>
-                      <span className={`cell-pill cell-${verdictTone(row.market?.verdict)}`}>
-                        {verdictLabel(row.market?.verdict)}
-                      </span>
-                    </td>
-                    <td className="num-cell">{cleanText(row.market?.score)}</td>
-                    <td className="num-cell">{cleanText(row.market?.confidence)}</td>
-                    <td>
-                      <span className={`cell-pill cell-${verdictTone(row.crypto?.verdict)}`}>
-                        {verdictLabel(row.crypto?.verdict)}
-                      </span>
-                    </td>
-                    <td className="num-cell">{cleanText(row.crypto?.score)}</td>
-                    <td className="num-cell">{cleanText(row.crypto?.confidence)}</td>
-                  </tr>
-                )
-              )
+            {rows.length > 0 ? (
+              rows.map((row) => (
+                <tr key={row.day}>
+                  <td className="date-cell">{row.day}</td>
+                  <td>
+                    <span className={`cell-pill cell-${verdictTone(row.market?.verdict)}`}>
+                      {verdictLabel(row.market?.verdict)}
+                    </span>
+                  </td>
+                  <td className="num-cell">{cleanText(row.market?.score)}</td>
+                  <td className="num-cell">{cleanText(row.market?.confidence)}</td>
+                  <td>
+                    <span className={`cell-pill cell-${verdictTone(row.crypto?.verdict)}`}>
+                      {verdictLabel(row.crypto?.verdict)}
+                    </span>
+                  </td>
+                  <td className="num-cell">{cleanText(row.crypto?.score)}</td>
+                  <td className="num-cell">{cleanText(row.crypto?.confidence)}</td>
+                </tr>
+              ))
             ) : (
               <tr>
                 <td colSpan="7" className="empty-cell">
@@ -448,14 +440,6 @@ function DataTable({ rows, startDate, endDate, onStartDate, onEndDate }) {
           </tbody>
         </table>
       </div>
-
-      {rows.length > 6 ? (
-        <div className="table-toggle">
-          <button type="button" className="preset" onClick={() => setExpanded((v) => !v)}>
-            {expanded ? '간단히 보기' : `전체 보기 (${rows.length})`}
-          </button>
-        </div>
-      ) : null}
     </section>
   );
 }
