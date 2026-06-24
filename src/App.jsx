@@ -146,30 +146,91 @@ function formatPnl(value) {
     : { label: '손실', amount: currency(Math.abs(number)), tone: 'danger' };
 }
 
-function buildLinePoints(values, width = 320, height = 180, padding = 20) {
-  if (!values.length) return { points: '', coords: [], min: 0, max: 0 };
+function getScale(values) {
   const min = Math.min(...values);
   const max = Math.max(...values);
-  const range = max - min || 1;
+  const padding = (max - min || 1) * 0.08;
+  return {
+    min: min - padding,
+    max: max + padding,
+  };
+}
+
+function buildChartPoints(values, width, height, padding, min, max) {
   const usableWidth = width - padding * 2;
   const usableHeight = height - padding * 2;
-  const coords = values.map((value, index) => {
+  const range = max - min || 1;
+  return values.map((value, index) => {
     const x = padding + (usableWidth * index) / Math.max(values.length - 1, 1);
     const y = padding + usableHeight - ((value - min) / range) * usableHeight;
     return { x, y, value };
   });
-  const points = coords.map((point) => `${point.x},${point.y}`).join(' ');
-  return { points, coords, min, max };
 }
 
-function MiniChart({ title, subtitle, series, formatValue, compact = false }) {
-  const width = compact ? 320 : 640;
-  const height = compact ? 200 : 240;
-  const allValues = series.flatMap((item) => item.values);
-  const min = Math.min(...allValues);
-  const max = Math.max(...allValues);
-  const range = max - min || 1;
+function buildSmoothPath(points) {
+  if (!points.length) return '';
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+  let path = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 1; i < points.length; i += 1) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    const midX = (prev.x + curr.x) / 2;
+    const midY = (prev.y + curr.y) / 2;
+    path += ` Q ${prev.x} ${prev.y} ${midX} ${midY}`;
+  }
+  const last = points[points.length - 1];
+  path += ` T ${last.x} ${last.y}`;
+  return path;
+}
+
+function buildAreaPath(points, height, padding) {
+  if (!points.length) return '';
+  const baseY = height - padding;
+  const smooth = buildSmoothPath(points);
+  const last = points[points.length - 1];
+  const first = points[0];
+  return `${smooth} L ${last.x} ${baseY} L ${first.x} ${baseY} Z`;
+}
+
+function getTickValues(min, max, count = 4) {
+  const step = (max - min) / count || 1;
+  return Array.from({ length: count + 1 }, (_, index) => min + step * index);
+}
+
+function FancyChart({
+  title,
+  subtitle,
+  series,
+  formatValue = (value) => String(value),
+  formatValueRight = null,
+  compact = false,
+  dualAxis = false,
+  leftLabel = '',
+  rightLabel = '',
+}) {
+  const width = compact ? 340 : 720;
+  const height = compact ? 220 : 260;
+  const padding = 24;
   const labels = series[0]?.labels || [];
+  const leftSeries = series.filter((item) => item.axis !== 'right');
+  const rightSeries = series.filter((item) => item.axis === 'right');
+  const leftValues = leftSeries.flatMap((item) => item.values);
+  const rightValues = rightSeries.flatMap((item) => item.values);
+  const leftScale = getScale(leftValues.length ? leftValues : [0]);
+  const rightScale = getScale(rightValues.length ? rightValues : leftValues.length ? leftValues : [0]);
+  const ticks = getTickValues(leftScale.min, leftScale.max, 4);
+
+  const geometryFor = (item) => {
+    const scale = item.axis === 'right' ? rightScale : leftScale;
+    const points = buildChartPoints(item.values, width, height, padding, scale.min, scale.max);
+    return {
+      points,
+      path: buildSmoothPath(points),
+      area: buildAreaPath(points, height, padding),
+      scale,
+    };
+  };
+
   return (
     <div className="chart-card">
       <div className="chart-head">
@@ -188,39 +249,62 @@ function MiniChart({ title, subtitle, series, formatValue, compact = false }) {
       </div>
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title} className="line-chart">
         <defs>
-          <linearGradient id={`grid-${slugId(title)}`} x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.12)" />
-            <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
-          </linearGradient>
+          {series.map((item) => {
+            const fillId = `fill-${slugId(title)}-${slugId(item.name)}`;
+            const glowId = `glow-${slugId(title)}-${slugId(item.name)}`;
+            return (
+              <React.Fragment key={item.name}>
+                <linearGradient id={fillId} x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor={item.color} stopOpacity={item.areaOpacity ?? 0.28} />
+                  <stop offset="100%" stopColor={item.color} stopOpacity={0} />
+                </linearGradient>
+                <filter id={glowId} x="-50%" y="-50%" width="200%" height="200%">
+                  <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor={item.color} floodOpacity="0.35" />
+                </filter>
+              </React.Fragment>
+            );
+          })}
         </defs>
-        {[0, 0.25, 0.5, 0.75, 1].map((tick) => {
-          const y = 20 + (height - 40) * tick;
-          return <line key={tick} x1="20" x2={width - 20} y1={y} y2={y} className="chart-line-grid" />;
+        {ticks.map((tickValue, index) => {
+          const y = padding + ((height - padding * 2) * (ticks.length - 1 - index)) / (ticks.length - 1);
+          return <line key={tickValue} x1={padding} x2={width - padding} y1={y} y2={y} className="chart-line-grid" />;
         })}
         {series.map((item) => {
-          const { points, coords } = buildLinePoints(item.values, width, height);
+          const geom = geometryFor(item);
+          const fillId = `fill-${slugId(title)}-${slugId(item.name)}`;
+          const glowId = `glow-${slugId(title)}-${slugId(item.name)}`;
+          const lastPoint = geom.points[geom.points.length - 1];
           return (
-            <g key={item.name}>
-              <polyline points={points} fill="none" stroke={item.color} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
-              {coords.map((point, index) => (
-                <circle key={`${item.name}-${index}`} cx={point.x} cy={point.y} r="3.5" fill={item.color} />
-              ))}
+            <g key={item.name} filter={`url(#${glowId})`}>
+              {item.area !== false ? <path d={geom.area} fill={`url(#${fillId})`} stroke="none" /> : null}
+              <path d={geom.path} fill="none" stroke={item.color} strokeWidth={item.strokeWidth || 3} strokeLinejoin="round" strokeLinecap="round" />
+              {lastPoint ? <circle cx={lastPoint.x} cy={lastPoint.y} r="4.5" fill={item.color} stroke="#08111d" strokeWidth="2" /> : null}
             </g>
           );
         })}
+        {dualAxis && rightSeries.length ? (
+          <>
+            <text x={width - padding + 8} y="24" className="chart-rail chart-right">
+              {formatValueRight ? formatValueRight(rightScale.max) : formatValue(rightScale.max)}
+            </text>
+            <text x={width - padding + 8} y={height - 20} className="chart-rail chart-right">
+              {formatValueRight ? formatValueRight(rightScale.min) : formatValue(rightScale.min)}
+            </text>
+          </>
+        ) : null}
         {labels.map((label, index) => {
-          const x = 20 + ((width - 40) * index) / Math.max(labels.length - 1, 1);
+          const x = padding + ((width - padding * 2) * index) / Math.max(labels.length - 1, 1);
           return (
-            <text key={label} x={x} y={height - 6} className="chart-label" textAnchor="middle">
+            <text key={label} x={x} y={height - 7} className="chart-label" textAnchor="middle">
               {label}
             </text>
           );
         })}
-        <text x="12" y="24" className="chart-rail">
-          {formatValue(max)}
+        <text x="14" y="24" className="chart-rail">
+          {leftLabel || formatValue(leftScale.max)}
         </text>
-        <text x="12" y={height - 22} className="chart-rail">
-          {formatValue(min)}
+        <text x="14" y={height - 20} className="chart-rail">
+          {leftLabel ? '' : formatValue(leftScale.min)}
         </text>
       </svg>
     </div>
@@ -413,28 +497,9 @@ function Simulator({ marketProject, cryptoProject }) {
   const presets = [7, 14, 30, 90];
   const projectionSteps = Array.from({ length: 13 }, (_, index) => Math.round((scenarioDays * index) / 12));
   const projectionLabels = projectionSteps.map((day) => `${day}d`);
-  const chartSeries = [
-    { name: '기준', color: '#8aa8ff', values: projectionSteps.map(() => capital) },
-    ...(selectedAssets.market
-      ? [{
-          name: 'Market',
-          color: '#52d6a6',
-          values: projectionSteps.map((day) => capital * (Math.pow(1 + marketEdge / 100, day / 7) - 1) + capital),
-        }]
-      : []),
-    ...(selectedAssets.crypto
-      ? [{
-          name: 'Crypto',
-          color: '#ffbf63',
-          values: projectionSteps.map((day) => capital * (Math.pow(1 + cryptoEdge / 100, day / 7) - 1) + capital),
-        }]
-      : []),
-    {
-      name: 'Blended',
-      color: '#ff718f',
-      values: projectionSteps.map((day) => capital * (Math.pow(1 + ((marketEdge * marketShare + cryptoEdge * cryptoShare) / 100), day / 7) - 1) + capital),
-    },
-  ];
+  const marketPath = projectionSteps.map((day) => capital * (Math.pow(1 + marketEdge / 100, day / 7) - 1) + capital);
+  const cryptoPath = projectionSteps.map((day) => capital * (Math.pow(1 + cryptoEdge / 100, day / 7) - 1) + capital);
+  const blendedPath = projectionSteps.map((day) => capital * (Math.pow(1 + ((marketEdge * marketShare + cryptoEdge * cryptoShare) / 100), day / 7) - 1) + capital);
 
   return (
     <section className="panel simulator">
@@ -553,13 +618,52 @@ function Simulator({ marketProject, cryptoProject }) {
       </div>
 
       <div className="chart-stack">
-        <MiniChart
+        <FancyChart
           title="예상 자산 경로"
           subtitle="기준금액부터 시나리오 기간까지 선택 자산들의 예상 경로"
-          series={chartSeries.map((item) => ({
-            ...item,
-            labels: projectionLabels,
-          }))}
+          series={[
+            {
+              name: 'Base',
+              color: '#8aa8ff',
+              values: projectionSteps.map(() => capital),
+              labels: projectionLabels,
+              axis: 'left',
+              area: false,
+              strokeWidth: 1.8,
+            },
+            ...(selectedAssets.market
+              ? [{
+                  name: 'Market',
+                  color: '#52d6a6',
+                  values: marketPath,
+                  labels: projectionLabels,
+                  axis: 'left',
+                  area: false,
+                  strokeWidth: 2.4,
+                }]
+              : []),
+            ...(selectedAssets.crypto
+              ? [{
+                  name: 'Crypto',
+                  color: '#ffbf63',
+                  values: cryptoPath,
+                  labels: projectionLabels,
+                  axis: 'left',
+                  area: false,
+                  strokeWidth: 2.4,
+                }]
+              : []),
+            {
+              name: 'Blended',
+              color: '#ff718f',
+              values: blendedPath,
+              labels: projectionLabels,
+              axis: 'left',
+              area: true,
+              areaOpacity: 0.14,
+              strokeWidth: 3.2,
+            },
+          ]}
           formatValue={(value) => compactCurrency(value)}
         />
       </div>
@@ -621,6 +725,7 @@ function App() {
   const combinedRows = mergeDailyRows(marketProject, cryptoProject);
   const trendScore = buildTrendSeries(combinedRows, 'score');
   const trendConfidence = buildTrendSeries(combinedRows, 'confidence');
+  const trendLabels = combinedRows.map((row) => row.day.slice(5));
   const [startDate, setStartDate] = React.useState(combinedRows[0]?.day || '');
   const [endDate, setEndDate] = React.useState(combinedRows[combinedRows.length - 1]?.day || '');
 
@@ -669,33 +774,24 @@ function App() {
       <section className="panel chart-panel">
         <div className="section-head">
           <div>
-            <div className="eyebrow">Trend charts</div>
+            <div className="eyebrow">Trend chart</div>
             <h3>날짜별 점수와 신뢰도</h3>
-            <p className="subtle">표와 같이 보면 흐름이 훨씬 빨리 보입니다.</p>
+            <p className="subtle">두 지표를 한 장에 합쳐서 흐름이 바로 보이도록 했습니다.</p>
           </div>
         </div>
-        <div className="chart-grid">
-          <MiniChart
-            title="점수 추이"
-            subtitle="마켓과 크립토의 날짜별 점수"
-            series={[
-              { name: 'Market', color: '#52d6a6', values: trendScore.market, labels: combinedRows.map((row) => row.day.slice(5)) },
-              { name: 'Crypto', color: '#ffbf63', values: trendScore.crypto, labels: combinedRows.map((row) => row.day.slice(5)) },
-            ]}
-            formatValue={(value) => String(Math.round(value))}
-            compact
-          />
-          <MiniChart
-            title="신뢰도 추이"
-            subtitle="마켓과 크립토의 날짜별 신뢰도"
-            series={[
-              { name: 'Market', color: '#8aa8ff', values: trendConfidence.market, labels: combinedRows.map((row) => row.day.slice(5)) },
-              { name: 'Crypto', color: '#ff718f', values: trendConfidence.crypto, labels: combinedRows.map((row) => row.day.slice(5)) },
-            ]}
-            formatValue={(value) => String(Math.round(value))}
-            compact
-          />
-        </div>
+        <FancyChart
+          title="Trend"
+          subtitle="마켓 점수와 신뢰도, 크립토 점수와 신뢰도를 한 장에서 비교"
+          series={[
+            { name: 'Market score', color: '#52d6a6', values: trendScore.market, labels: trendLabels, axis: 'left', area: true, strokeWidth: 3.2 },
+            { name: 'Crypto score', color: '#ffbf63', values: trendScore.crypto, labels: trendLabels, axis: 'left', area: false, strokeWidth: 2.2 },
+            { name: 'Market confidence', color: '#8aa8ff', values: trendConfidence.market, labels: trendLabels, axis: 'right', area: true, areaOpacity: 0.16, strokeWidth: 2.8 },
+            { name: 'Crypto confidence', color: '#ff718f', values: trendConfidence.crypto, labels: trendLabels, axis: 'right', area: false, strokeWidth: 2.2 },
+          ]}
+          formatValue={(value) => `${Math.round(value)}`}
+          formatValueRight={(value) => `${Math.round(value)}%`}
+          dualAxis
+        />
       </section>
 
       <DataTable
