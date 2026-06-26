@@ -71,9 +71,18 @@ function performanceSummary(project) {
   const returnRows = Array.isArray(report.return_rows) ? report.return_rows : [];
   if (!text) return null;
 
+  const escapeRegExp = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const pick = (label) => {
-    const match = text.match(new RegExp(`${label}:\\s*([^\\n]+)`));
+    const match = text.match(new RegExp(`${escapeRegExp(label)}:\\s*([^\\n]+)`));
     return match ? match[1].trim() : '-';
+  };
+
+  const firstPick = (...labels) => {
+    for (const label of labels) {
+      const value = pick(label);
+      if (value !== '-') return value;
+    }
+    return '-';
   };
 
   const avgReturn = (key) => {
@@ -82,17 +91,27 @@ function performanceSummary(project) {
     return total / returnRows.length;
   };
 
+  const calibration = report.calibration || {};
+  const benchmarkWeights = calibration.benchmark_weights || {};
+  const isMarket = project.projectId === 'market-agent';
+  const leftLabel = isMarket ? 'S&P 500' : 'BTC';
+  const rightLabel = isMarket ? 'KOSPI' : 'ETH';
+  const leftWeight = toNumber(benchmarkWeights.left_weight, 0.5);
+  const rightWeight = toNumber(benchmarkWeights.right_weight, 0.5);
+
   return {
-    accuracy: pick('판단 적중률'),
+    accuracy: firstPick('판단 적중률'),
     mae: pick('평균 점수 오차'),
-    winRate: pick('전략 승률'),
-    maxDrawdown: pick('최대 낙폭'),
-    strategyReturn: pick('전략 누적 수익률'),
-    benchmarkReturn: pick('SPY 누적 수익률') !== '-' ? pick('SPY 누적 수익률') : pick('BTC 누적 수익률'),
+    winRate: firstPick('전략 승률'),
+    maxDrawdown: firstPick('최대 낙폭'),
+    strategyReturn: firstPick('전략 누적 수익률'),
+    benchmarkReturn: firstPick('벤치마크 누적 수익률', 'S&P 500(원화) 누적 수익률', 'KRW 바스켓 누적 수익률'),
     sampleCount: returnRows.length,
     avgStrategyReturnPct: avgReturn('strategy_return_pct'),
     avgBenchmarkReturnPct: avgReturn('benchmark_return_pct') ?? avgReturn('spy_return_pct') ?? avgReturn('kospi_return_pct') ?? avgReturn('asset_return_pct'),
     exposureRate: returnRows.length ? returnRows.reduce((sum, row) => sum + toNumber(row.exposure, 0), 0) / returnRows.length : null,
+    benchmarkWeightsLabel: `${leftLabel} ${Math.round(leftWeight * 100)}% / ${rightLabel} ${Math.round(rightWeight * 100)}%`,
+    benchmarkMethod: benchmarkWeights.method || '-',
   };
 }
 
@@ -426,7 +445,8 @@ function ProjectCard({ project }) {
 
       <div className="metric-grid">
         <MetricCard label="권장 비중" value={formatPercentInt(decision?.engine?.position_size)} caption="현재 엔진 기준" tone={tone} />
-        <MetricCard label="기대수익률" value={pct(decision?.calibration?.expected_return_pct ?? 0, 2)} caption="보정 기대값" />
+        <MetricCard label="실투입 손익" value={perf?.strategyReturn || pct(decision?.calibration?.expected_return_pct ?? 0, 2)} caption={perf?.benchmarkReturn ? `벤치마크 ${perf.benchmarkReturn}` : 'KRW 기준'} />
+        <MetricCard label="KRW 바스켓" value={perf?.benchmarkWeightsLabel || '-'} caption={perf?.benchmarkMethod || '역사 데이터 기준'} />
         <MetricCard label="샘플" value={cleanText(decision?.calibration?.sample_count ?? 0)} caption="보정 표본 수" />
         <MetricCard label="품질" value={`${cleanText(decision?.engine?.quality_score ?? '-')}/100`} caption="데이터 품질" />
       </div>
@@ -454,11 +474,21 @@ function ProjectCard({ project }) {
         </p>
       </div>
 
+      {perf?.benchmarkWeightsLabel ? (
+        <div className="mini-block">
+          <h3>KRW 바스켓</h3>
+          <p className="note">
+            {perf.benchmarkWeightsLabel}
+            {perf.benchmarkMethod ? ` · ${perf.benchmarkMethod}` : ''}
+          </p>
+        </div>
+      ) : null}
+
       {perf ? (
         <div className="perf-strip">
           <span>{perf.accuracy}</span>
           <span>{perf.strategyReturn}</span>
-          <span>{perf.maxDrawdown}</span>
+          <span>{perf.benchmarkReturn}</span>
         </div>
       ) : null}
     </section>
@@ -543,6 +573,8 @@ function Simulator({ marketProject, cryptoProject }) {
   const marketReturnRows = getReturnRows(marketProject);
   const cryptoReturnRows = getReturnRows(cryptoProject);
   const combinedReturnRows = mergeReturnRows(marketProject, cryptoProject);
+  const marketBasketLabel = marketPerf?.benchmarkWeightsLabel || 'S&P 500 / KOSPI';
+  const cryptoBasketLabel = cryptoPerf?.benchmarkWeightsLabel || 'BTC / ETH';
 
   const [marketWeight, setMarketWeight] = React.useState(Math.round(toNumber(marketDecision.engine?.position_size, 55)));
   const [cryptoWeight, setCryptoWeight] = React.useState(Math.round(toNumber(cryptoDecision.engine?.position_size, 0)));
@@ -599,7 +631,7 @@ function Simulator({ marketProject, cryptoProject }) {
           <h3>실투입 예상 수익률</h3>
           <p className="subtle">실제 사후검증 수익률을 날짜별로 누적해서, 리포트대로 투자했을 때의 순손익을 보여줍니다.</p>
         </div>
-        <span className="subtle">기준 자산: Market = S&P 500 / KOSPI, Crypto = Bitcoin</span>
+        <span className="subtle">기준 자산: Market = {marketBasketLabel}, Crypto = {cryptoBasketLabel}</span>
       </div>
 
       <div className="sim-grid">
