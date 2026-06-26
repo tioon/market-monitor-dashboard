@@ -715,13 +715,13 @@ function Simulator({ marketProject, cryptoProject }) {
           <span>Market allocation</span>
           <strong className={marketResult.tone === 'danger' ? 'down' : 'up'}>{marketResult.label} {marketResult.amount}</strong>
           <small>{pct(((marketFinal / Math.max(capital, 1)) - 1) * 100, 2)} · 최종 {compactCurrency(marketFinal)}</small>
-          <small>기준: Market 백테스트 {pct(marketDailyEdge, 2)} / day</small>
+          <small>기준: Market 백테스트 {pct(marketDailyEdge, 2)} · 다음 리포트 기준</small>
         </div>
         <div className="projection-card">
           <span>Crypto allocation</span>
           <strong className={cryptoResult.tone === 'danger' ? 'down' : 'up'}>{cryptoResult.label} {cryptoResult.amount}</strong>
           <small>{pct(((cryptoFinal / Math.max(capital, 1)) - 1) * 100, 2)} · 최종 {compactCurrency(cryptoFinal)}</small>
-          <small>기준: Crypto 백테스트 {pct(cryptoDailyEdge, 2)} / day</small>
+          <small>기준: Crypto 백테스트 {pct(cryptoDailyEdge, 2)} · 다음 리포트 기준</small>
         </div>
         <div className="projection-card accent">
           <span>Portfolio</span>
@@ -734,22 +734,22 @@ function Simulator({ marketProject, cryptoProject }) {
       <div className="calc-box">
         <div>
           <span>계산식</span>
-          <strong>일별 리포트 순손익을 누적합니다.</strong>
+          <strong>리포트 간 순손익을 누적합니다.</strong>
         </div>
         <div>
           <span>Market</span>
-          <strong>{pct(marketDailyEdge, 2)} / day</strong>
+          <strong>{pct(marketDailyEdge, 2)} · 다음 리포트 기준</strong>
           <small>{marketReturnRows.length}개 샘플 · {marketDecision?.engine?.position_size ?? '-'}% 권장</small>
         </div>
         <div>
           <span>Crypto</span>
-          <strong>{pct(cryptoDailyEdge, 2)} / day</strong>
+          <strong>{pct(cryptoDailyEdge, 2)} · 다음 리포트 기준</strong>
           <small>{cryptoReturnRows.length}개 샘플 · {cryptoDecision?.engine?.position_size ?? '-'}% 권장</small>
         </div>
         <div>
           <span>Blended</span>
-          <strong>{pct(blendedDailyEdge, 2)} / day · {activeRows.length}개 샘플</strong>
-          <small>현금 포함 후 일자별 순손익을 누적합니다.</small>
+          <strong>{pct(blendedDailyEdge, 2)} · 다음 리포트 기준 · {activeRows.length}개 샘플</strong>
+          <small>현금 포함 후 리포트 시점 간 순손익을 누적합니다.</small>
         </div>
         <div>
           <span>Cash</span>
@@ -865,7 +865,7 @@ function Simulator({ marketProject, cryptoProject }) {
       <div className="risk-band">
         <div>
           <span>현금 포함 순손익률</span>
-          <strong>{pct(blendedDailyEdge, 2)} / day</strong>
+          <strong>{pct(blendedDailyEdge, 2)} · 다음 리포트 기준</strong>
         </div>
         <div>
           <span>시나리오 끝 순손익</span>
