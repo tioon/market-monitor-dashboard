@@ -38,3 +38,17 @@ npm run build
 The deployed GitHub Pages site is served from the committed `docs/` folder.
 After rebuilding, copy the refreshed `dist/` output into `docs/` and push the
 branch.
+
+## Automatic refresh
+
+GitHub Actions refreshes the dashboard every day at `08:00 KST` (`23:00 UTC`).
+The workflow rebuilds the site, syncs the new `dist/` output into `docs/`, and
+commits the updated snapshot back to `main`.
+
+For live AWS-backed refreshes, set these repository secrets:
+
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+
+Without AWS credentials, the build falls back to the committed snapshot and the
+site will not pick up new upstream reports.
