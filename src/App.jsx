@@ -96,6 +96,34 @@ function performanceSummary(project) {
   };
 }
 
+function calibrationWarning(project) {
+  const decision = latestDecision(project);
+  const calibration = decision?.calibration || {};
+  const reportRows = Array.isArray(project.performance?.report_json?.return_rows) ? project.performance.report_json.return_rows : [];
+  const uniqueScores = new Set(
+    reportRows
+      .map((row) => row?.predicted_score)
+      .filter((value) => value !== null && value !== undefined && value !== '')
+  ).size;
+  const sampleCount = toNumber(calibration.sample_count ?? reportRows.length, 0);
+  const r2 = toNumber(calibration.model?.r2, 0);
+  const issues = [];
+
+  if (sampleCount < 3) {
+    issues.push(`샘플이 너무 적습니다(${sampleCount}개).`);
+  }
+  if (uniqueScores < 2) {
+    issues.push(`예측 점수가 거의 고정되어 있습니다(고유 score ${uniqueScores}개).`);
+  }
+  if (r2 < 0.05) {
+    issues.push(`회귀 설명력이 낮습니다(R² ${r2.toFixed(2)}).`);
+  }
+
+  if (!issues.length) return null;
+
+  return `최근 보정값은 예측력보다 평균값에 가깝습니다. ${issues.join(' ')}`;
+}
+
 function slugId(value) {
   return String(value || '').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
 }
@@ -379,6 +407,7 @@ function ProjectCard({ project }) {
   const decision = latestDecision(project);
   const report = latestReport(project);
   const perf = performanceSummary(project);
+  const calibrationNote = calibrationWarning(project);
   const verdict = verdictLabel(decision?.dashboard?.verdict || decision?.ai_signal?.verdict);
   const tone = verdictTone(verdict);
 
@@ -401,6 +430,13 @@ function ProjectCard({ project }) {
         <MetricCard label="샘플" value={cleanText(decision?.calibration?.sample_count ?? 0)} caption="보정 표본 수" />
         <MetricCard label="품질" value={`${cleanText(decision?.engine?.quality_score ?? '-')}/100`} caption="데이터 품질" />
       </div>
+
+      {calibrationNote ? (
+        <div className="mini-block">
+          <h3>보정 상태</h3>
+          <p className="note">{calibrationNote}</p>
+        </div>
+      ) : null}
 
       <div className="mini-block">
         <h3>핵심 근거</h3>
