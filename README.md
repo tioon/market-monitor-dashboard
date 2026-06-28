@@ -25,7 +25,7 @@ The app snapshots the latest DynamoDB and S3 data into `src/data/snapshot.json`.
 npm run sync:data
 ```
 
-If AWS access is unavailable, the build falls back to the committed snapshot.
+AWS access is required for data refresh; the build does not fall back to a local snapshot.
 
 ## Build
 
@@ -50,5 +50,5 @@ For live AWS-backed refreshes, set these repository secrets:
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 
-Without AWS credentials, the build falls back to the committed snapshot and the
-site will not pick up new upstream reports.
+Without AWS credentials, the build cannot refresh data and the site will not
+pick up new upstream reports.

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -147,15 +147,6 @@ function downloadLatestS3Object(bucket, prefix, suffix) {
   return { key, content };
 }
 
-function readExistingSnapshot() {
-  if (!existsSync(snapshotPath)) return null;
-  try {
-    return JSON.parse(readFileSync(snapshotPath, 'utf8'));
-  } catch {
-    return null;
-  }
-}
-
 function makeProjectSnapshot(project) {
   const reports = queryTable(project.historyTable, project.projectId);
   const decisions = queryTable(project.decisionTable, project.projectId);
@@ -191,7 +182,6 @@ function makeProjectSnapshot(project) {
 
 function syncSnapshot() {
   mkdirSync(dataDir, { recursive: true });
-  const existing = readExistingSnapshot();
   try {
     const snapshot = {
       generatedAt: new Date().toISOString(),
@@ -202,11 +192,6 @@ function syncSnapshot() {
     writeFileSync(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
     process.stdout.write(`Wrote ${snapshotPath}\n`);
   } catch (error) {
-    if (existing) {
-      process.stdout.write(`AWS sync failed, keeping existing snapshot: ${error.message}\n`);
-      writeFileSync(snapshotPath, `${JSON.stringify(existing, null, 2)}\n`, 'utf8');
-      return;
-    }
     throw error;
   }
 }
