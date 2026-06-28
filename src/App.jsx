@@ -214,6 +214,328 @@ function mergeReturnRows(marketProject, cryptoProject) {
   }));
 }
 
+function buildReportLedger(project) {
+  const decisionMap = new Map(
+    (project.decisions || []).map((item) => [dayOnly(item.generated_at), item.decision_snapshot || null])
+  );
+  const performanceMap = new Map(
+    getReturnRows(project).map((row) => [dayOnly(row.generated_at), row])
+  );
+
+  return (project.reports || [])
+    .map((report, index) => {
+      const day = dayOnly(report.generated_at);
+      const decision = decisionMap.get(day) || null;
+      const performance = performanceMap.get(day) || null;
+      const dashboard = decision?.dashboard || {};
+      const engine = decision?.engine || {};
+      const ai = decision?.ai_signal || {};
+      const calibration = decision?.calibration || {};
+      return {
+        index,
+        day,
+        report,
+        decision,
+        performance,
+        verdict: dashboard.verdict || ai.verdict || ai.ai_verdict || null,
+        score: dashboard.score ?? ai.rule_score ?? ai.combined_score ?? null,
+        confidence: engine.confidence_score ?? ai.confidence ?? ai.ai_confidence ?? null,
+        position: engine.position_size ?? ai.position_size ?? null,
+        tradeMode: engine.trade_mode || ai.trade_mode || null,
+        sampleCount: calibration.sample_count ?? calibration.raw_sample_count ?? 0,
+      };
+    })
+    .sort((a, b) => (a.report.generated_at < b.report.generated_at ? -1 : 1));
+}
+
+function reportKeyMetrics(project) {
+  const latest = latestDecision(project) || {};
+  const engine = latest.engine || {};
+  const calibration = latest.calibration || {};
+  const performance = performanceSummary(project) || {};
+  return [
+    { label: '최근 판정', value: verdictLabel(latest.dashboard?.verdict || latest.ai_signal?.verdict), caption: '가장 최근 decision' },
+    { label: '최근 비중', value: formatPercentInt(engine.position_size ?? latest.ai_signal?.position_size), caption: engine.trade_mode || '미정' },
+    { label: '보정 표본', value: cleanText(calibration.sample_count ?? performance.sampleCount ?? 0), caption: `신뢰도 ${cleanText(engine.confidence_score ?? '-')}` },
+    { label: '프로젝트 손익', value: performance.strategyReturn || '-', caption: performance.benchmarkReturn ? `벤치마크 ${performance.benchmarkReturn}` : '백테스트 요약' },
+  ];
+}
+
+function summarizeCoreData(coreData, projectId) {
+  const entries = Object.entries(coreData || {})
+    .filter(([, value]) => value !== null && value !== undefined)
+    .map(([key, value]) => ({
+      key,
+      value,
+      priority: 0,
+    }));
+
+  const priorityKeys = projectId === 'market-agent'
+    ? ['spy_1mo_pct', 'rsp_1mo_pct', 'iwm_1mo_pct', 'hyg_1mo_pct', 'vix', 'usdkrw', 'us10y', 'shiller_pe', 'earnings_yield', 'kospi']
+    : ['btc_24h', 'eth_24h', 'btc_7d', 'eth_fee_7d', 'btc_active_7d', 'eth_tx_7d', 'fear_greed', 'stablecoin_supply', 'mcap'];
+
+  return entries
+    .map((item) => ({
+      ...item,
+      priority: priorityKeys.indexOf(item.key) === -1 ? priorityKeys.length : priorityKeys.indexOf(item.key),
+    }))
+    .sort((a, b) => a.priority - b.priority || a.key.localeCompare(b.key))
+    .slice(0, 10);
+}
+
+function formatCoreValue(key, value) {
+  if (value === null || value === undefined) return '-';
+  if (typeof value === 'number') {
+    if (key.includes('pct') || key.includes('rate') || key.includes('score') || key.includes('hit') || key.includes('yield') || key.includes('spread') || key.includes('fee') || key.includes('return')) {
+      return pct(value, 2);
+    }
+    if (key.includes('vix') || key.includes('fear') || key.includes('r2')) {
+      return toNumber(value, 0).toFixed(2);
+    }
+    return new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 2 }).format(value);
+  }
+  return String(value);
+}
+
+function ReportExplorer({ marketProject, cryptoProject }) {
+  const [activeProjectId, setActiveProjectId] = React.useState(marketProject.projectId);
+  const activeProject = activeProjectId === cryptoProject.projectId ? cryptoProject : marketProject;
+  const ledgerRows = React.useMemo(() => buildReportLedger(activeProject), [activeProject]);
+  const ledgerKey = React.useMemo(() => ledgerRows.map((row) => row.day).join('|'), [ledgerRows]);
+  const [selectedDay, setSelectedDay] = React.useState(ledgerRows.at(-1)?.day || '');
+
+  React.useEffect(() => {
+    const hasSelected = ledgerRows.some((row) => row.day === selectedDay);
+    if (!hasSelected) {
+      setSelectedDay(ledgerRows.at(-1)?.day || '');
+    }
+  }, [ledgerKey, selectedDay, ledgerRows]);
+
+  const selectedRow = ledgerRows.find((row) => row.day === selectedDay) || ledgerRows.at(-1) || null;
+  const projectPerf = performanceSummary(activeProject) || {};
+  const metrics = reportKeyMetrics(activeProject);
+  const coreData = summarizeCoreData(selectedRow?.decision?.core_data || {}, activeProject.projectId);
+  const reportText = selectedRow?.report?.report_text || '리포트 본문이 없습니다.';
+  const brief = selectedRow?.decision?.decision_brief || [];
+  const evidence = selectedRow?.decision?.core_evidence || [];
+  const positives = selectedRow?.decision?.dashboard?.positives || [];
+  const negatives = selectedRow?.decision?.dashboard?.negatives || [];
+  const perf = selectedRow?.performance || null;
+  const performanceTone = perf?.strategy_return_pct >= 0 ? 'good' : 'danger';
+
+  return (
+    <section className="panel report-explorer">
+      <div className="section-head">
+        <div>
+          <div className="eyebrow">Report explorer</div>
+          <h3>리포트 분석 화면</h3>
+          <p className="subtle">DynamoDB 리포트, decision, 24시간 사후검증 성과를 한 화면에서 맞춰 봅니다.</p>
+        </div>
+        <div className="report-tabs">
+          <button
+            type="button"
+            className={activeProjectId === marketProject.projectId ? 'report-tab active' : 'report-tab'}
+            onClick={() => setActiveProjectId(marketProject.projectId)}
+          >
+            Market
+          </button>
+          <button
+            type="button"
+            className={activeProjectId === cryptoProject.projectId ? 'report-tab active' : 'report-tab'}
+            onClick={() => setActiveProjectId(cryptoProject.projectId)}
+          >
+            Crypto
+          </button>
+        </div>
+      </div>
+
+      <div className="report-summary">
+        {metrics.map((item) => (
+          <div key={item.label} className="report-summary-card">
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <small>{item.caption}</small>
+          </div>
+        ))}
+      </div>
+
+      <div className="report-layout">
+        <div className="report-list">
+          <div className="report-list-head">
+            <strong>{projectLabel(activeProject.projectId)} 리포트</strong>
+            <small>{ledgerRows.length}개 저장됨</small>
+          </div>
+          <div className="report-list-scroll">
+            {ledgerRows.map((row) => {
+              const active = row.day === selectedDay;
+              const perfTone = row.performance ? (row.performance.strategy_return_pct >= 0 ? 'up' : 'down') : '';
+              return (
+                <button
+                  key={`${row.day}-${row.index}`}
+                  type="button"
+                  className={active ? 'report-item active' : 'report-item'}
+                  onClick={() => setSelectedDay(row.day)}
+                >
+                  <div className="report-item-top">
+                    <strong>{row.day}</strong>
+                    <span className={`cell-pill cell-${verdictTone(row.verdict)}`}>{verdictLabel(row.verdict)}</span>
+                  </div>
+                  <div className="report-item-meta">
+                    <span>{cleanText(row.tradeMode, '미정')}</span>
+                    <span>{cleanText(row.score)}</span>
+                    <span>{cleanText(row.confidence)}</span>
+                  </div>
+                  <div className="report-item-bottom">
+                    <span>비중 {formatPercentInt(row.position)}</span>
+                    <span className={perfTone}>
+                      {row.performance ? `${row.performance.strategy_return_pct >= 0 ? '+' : ''}${row.performance.strategy_return_pct.toFixed(2)}%` : '24h 없음'}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="report-detail">
+          {selectedRow ? (
+            <>
+              <div className="report-detail-head">
+                <div>
+                  <div className="eyebrow">{dayOnly(selectedRow.report.generated_at)}</div>
+                  <h4>{verdictLabel(selectedRow.verdict)} · {cleanText(selectedRow.tradeMode, '미정')}</h4>
+                  <p className="subtle">
+                    점수 {cleanText(selectedRow.score)} · 신뢰도 {cleanText(selectedRow.confidence)} · 보정 표본 {cleanText(selectedRow.sampleCount)}
+                  </p>
+                </div>
+                <div className={`pill pill-${verdictTone(selectedRow.verdict)}`}>{formatPercentInt(selectedRow.position)}</div>
+              </div>
+
+              <div className="detail-grid">
+                <div className="detail-card">
+                  <span>행동</span>
+                  <strong>{cleanText(selectedRow.decision?.ai_signal?.action || selectedRow.decision?.decision_brief?.[0], '미정')}</strong>
+                  <small>{cleanText(selectedRow.decision?.engine?.entry_condition || selectedRow.decision?.decision_brief?.[1], '진입 조건 없음')}</small>
+                </div>
+                <div className="detail-card">
+                  <span>손익</span>
+                  <strong className={performanceTone}>{perf ? pct(perf.strategy_return_pct, 2) : '-'}</strong>
+                  <small>{perf ? `벤치마크 ${pct(perf.benchmark_return_pct, 2)}` : '24h 성과 없음'}</small>
+                </div>
+                <div className="detail-card">
+                  <span>가격 창</span>
+                  <strong>{perf ? dayOnly(perf.generated_at) : '-'}</strong>
+                  <small>{perf ? dayOnly(perf.future_generated_at) : '-'}</small>
+                </div>
+                <div className="detail-card">
+                  <span>리포트 타입</span>
+                  <strong>{selectedRow.report.record_type || 'report'}</strong>
+                  <small>{cleanText(selectedRow.report.record_key)}</small>
+                </div>
+              </div>
+
+              <div className="analysis-blocks">
+                <div className="analysis-block">
+                  <h5>핵심 지표</h5>
+                  <div className="chip-grid">
+                    {coreData.map((item) => (
+                      <span key={item.key} className="analysis-chip">
+                        <strong>{item.key}</strong>
+                        <small>{formatCoreValue(item.key, item.value)}</small>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="analysis-block">
+                  <h5>긍정 / 부정</h5>
+                  <div className="two-column-notes">
+                    <div>
+                      <span>긍정</span>
+                      <ul>
+                        {(positives.length ? positives : ['-']).map((item) => <li key={item}>{item}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <span>부정</span>
+                      <ul>
+                        {(negatives.length ? negatives : ['-']).map((item) => <li key={item}>{item}</li>)}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="analysis-block">
+                  <h5>결정 근거</h5>
+                  <ul>
+                    {(evidence.length ? evidence : ['-']).map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+
+                <div className="analysis-block">
+                  <h5>Decision brief</h5>
+                  <ul>
+                    {(brief.length ? brief : ['-']).map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="report-body-grid">
+                <div className="report-body">
+                  <h5>리포트 본문</h5>
+                  <pre>{reportText}</pre>
+                </div>
+                <div className="report-body">
+                  <h5>24h 성과 해석</h5>
+                  <div className="report-metrics">
+                    <div>
+                      <span>전략</span>
+                      <strong className={perf?.strategy_return_pct >= 0 ? 'up' : 'down'}>{perf ? pct(perf.strategy_return_pct, 2) : '-'}</strong>
+                    </div>
+                    <div>
+                      <span>벤치마크</span>
+                      <strong className={perf?.benchmark_return_pct >= 0 ? 'up' : 'down'}>{perf ? pct(perf.benchmark_return_pct, 2) : '-'}</strong>
+                    </div>
+                    <div>
+                      <span>노출</span>
+                      <strong>{perf ? pct(perf.exposure * 100, 0) : '-'}</strong>
+                    </div>
+                    <div>
+                      <span>회전율</span>
+                      <strong>{perf ? pct(perf.turnover_pct, 2) : '-'}</strong>
+                    </div>
+                  </div>
+                  <p className="note">
+                    {perf
+                      ? `기준 시점에서 24시간 뒤 매칭된 실제 가격 변화로 계산했다. ${cleanText(perf.asset_name, '대상 자산')} / ${cleanText(perf.regime, 'regime 없음')}`
+                      : '이 리포트는 24시간 매칭 결과가 없어 성과 계산이 비어 있다.'}
+                  </p>
+                  {perf ? (
+                    <ul className="perf-detail-list">
+                      <li>시작: {dayOnly(perf.generated_at)} → 종료: {dayOnly(perf.future_generated_at)}</li>
+                      <li>거래비용: {pct(perf.trade_cost_pct, 3)} · 턴오버: {pct(perf.turnover_pct, 2)}</li>
+                      <li>기준 자산: {cleanText(perf.asset_name)}</li>
+                      <li>항상투자: {pct(perf.always_invest_return_pct, 2)} · 현금대비: {pct(perf.always_cash_return_pct, 2)}</li>
+                    </ul>
+                  ) : null}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="empty-report">리포트가 없습니다.</div>
+          )}
+        </div>
+      </div>
+
+      <div className="report-foot">
+        <span>{projectLabel(activeProject.projectId)} / {ledgerRows.length}개 리포트</span>
+        <span>백테스트: {projectPerf.strategyReturn || '-'}</span>
+        <span>벤치마크: {projectPerf.benchmarkReturn || '-'}</span>
+      </div>
+    </section>
+  );
+}
+
 function getPeriodRows(rows, scenarioDays) {
   if (!rows.length) return [];
   const limit = Math.max(1, Math.min(rows.length, Math.round(toNumber(scenarioDays, rows.length))));
@@ -1022,6 +1344,8 @@ function App() {
           dualAxis
         />
       </section>
+
+      <ReportExplorer marketProject={marketProject} cryptoProject={cryptoProject} />
 
       <DataTable
         rows={filteredRows}
