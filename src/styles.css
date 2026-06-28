@@ -315,6 +315,22 @@ button {
   font-size: 0.76rem;
 }
 
+.report-item-pnl {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.74rem;
+}
+
+.report-item-pnl strong {
+  font-size: 0.84rem;
+}
+
 .report-item-bottom .up {
   color: #c9ffe9;
 }
@@ -506,6 +522,14 @@ button {
   margin-top: 8px;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 1rem;
+}
+
+.report-metrics small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.76rem;
 }
 
 .empty-report {

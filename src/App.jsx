@@ -328,6 +328,7 @@ function formatCoreValue(key, value) {
 }
 
 function ReportExplorer({ marketProject, cryptoProject }) {
+  const analysisCapital = 10000000;
   const [activeProjectId, setActiveProjectId] = React.useState(marketProject.projectId);
   const activeProject = activeProjectId === cryptoProject.projectId ? cryptoProject : marketProject;
   const ledgerRows = React.useMemo(() => buildReportLedger(activeProject), [activeProject]);
@@ -352,6 +353,10 @@ function ReportExplorer({ marketProject, cryptoProject }) {
   const negatives = selectedRow?.decision?.dashboard?.negatives || [];
   const perf = selectedRow?.performance || null;
   const performanceTone = perf?.strategy_return_pct >= 0 ? 'good' : 'danger';
+  const reportNetPnl = perf ? pnlFromReturnPct(perf.strategy_return_pct, analysisCapital) : null;
+  const benchmarkNetPnl = perf ? pnlFromReturnPct(perf.benchmark_return_pct, analysisCapital) : null;
+  const reportPnl = perf ? formatNetPnl(reportNetPnl) : null;
+  const benchmarkPnl = perf ? formatNetPnl(benchmarkNetPnl) : null;
 
   return (
     <section className="panel report-explorer">
@@ -421,6 +426,14 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                       {row.performance ? `${row.performance.strategy_return_pct >= 0 ? '+' : ''}${row.performance.strategy_return_pct.toFixed(2)}%` : '24h 없음'}
                     </span>
                   </div>
+                  {row.performance ? (
+                    <div className="report-item-pnl">
+                      <span>1천만 원 기준</span>
+                      <strong className={row.performance.strategy_return_pct >= 0 ? 'up' : 'down'}>
+                        {formatNetPnl(pnlFromReturnPct(row.performance.strategy_return_pct, analysisCapital)).amount}
+                      </strong>
+                    </div>
+                  ) : null}
                 </button>
               );
             })}
@@ -449,8 +462,10 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                 </div>
                 <div className="detail-card">
                   <span>손익</span>
-                  <strong className={performanceTone}>{perf ? pct(perf.strategy_return_pct, 2) : '-'}</strong>
-                  <small>{perf ? `벤치마크 ${pct(perf.benchmark_return_pct, 2)}` : '24h 성과 없음'}</small>
+                  <strong className={performanceTone}>
+                    {perf ? `${pct(perf.strategy_return_pct, 2)} · ${reportPnl?.amount || '-'}` : '-'}
+                  </strong>
+                  <small>{perf ? `벤치마크 ${pct(perf.benchmark_return_pct, 2)} · ${benchmarkPnl?.amount || '-'}` : '24h 성과 없음'}</small>
                 </div>
                 <div className="detail-card">
                   <span>가격 창</span>
@@ -519,20 +534,23 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                   <h5>24h 성과 해석</h5>
                   <div className="report-metrics">
                     <div>
-                      <span>전략</span>
+                      <span>전략 수익률</span>
                       <strong className={perf?.strategy_return_pct >= 0 ? 'up' : 'down'}>{perf ? pct(perf.strategy_return_pct, 2) : '-'}</strong>
+                      <small>{reportPnl?.amount || '-'}</small>
                     </div>
                     <div>
-                      <span>벤치마크</span>
+                      <span>벤치마크 수익률</span>
                       <strong className={perf?.benchmark_return_pct >= 0 ? 'up' : 'down'}>{perf ? pct(perf.benchmark_return_pct, 2) : '-'}</strong>
+                      <small>{benchmarkPnl?.amount || '-'}</small>
                     </div>
                     <div>
                       <span>노출</span>
                       <strong>{perf ? pct(perf.exposure * 100, 0) : '-'}</strong>
                     </div>
                     <div>
-                      <span>회전율</span>
-                      <strong>{perf ? pct(perf.turnover_pct, 2) : '-'}</strong>
+                      <span>기준 금액</span>
+                      <strong>{currency(analysisCapital)}</strong>
+                      <small>순손익 환산 기준</small>
                     </div>
                   </div>
                   <p className="note">
@@ -545,6 +563,7 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                       <li>시작: {dayOnly(perf.generated_at)} → 종료: {dayOnly(perf.future_generated_at)}</li>
                       <li>거래비용: {pct(perf.trade_cost_pct, 3)} · 턴오버: {pct(perf.turnover_pct, 2)}</li>
                       <li>기준 자산: {cleanText(perf.asset_name)}</li>
+                      <li>1천만 원 기준 순손익: {reportPnl?.amount || '-'}</li>
                       <li>항상투자: {pct(perf.always_invest_return_pct, 2)} · 현금대비: {pct(perf.always_cash_return_pct, 2)}</li>
                     </ul>
                   ) : null}
@@ -610,6 +629,10 @@ function formatNetPnl(value) {
   return number >= 0
     ? { label: '순수익', amount: `+${currency(number)}`, tone: 'good' }
     : { label: '순손실', amount: `-${currency(Math.abs(number))}`, tone: 'danger' };
+}
+
+function pnlFromReturnPct(returnPct, capital = 10000000) {
+  return toNumber(capital, 0) * (toNumber(returnPct, 0) / 100);
 }
 
 function getScale(values) {
