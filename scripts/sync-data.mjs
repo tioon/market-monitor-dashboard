@@ -123,7 +123,7 @@ function queryTable(tableName, projectId) {
   return (data.Items || []).map(fromDynamo);
 }
 
-function downloadLatestS3Object(bucket, prefix, suffix) {
+function downloadS3Objects(bucket, prefix, suffix) {
   const listing = run('aws', [
     's3api',
     'list-objects-v2',
@@ -141,10 +141,10 @@ function downloadLatestS3Object(bucket, prefix, suffix) {
     .map((item) => item.Key)
     .filter((key) => key.endsWith(suffix))
     .sort();
-  if (keys.length === 0) return null;
-  const key = keys[keys.length - 1];
-  const content = run('aws', ['s3', 'cp', `s3://${bucket}/${key}`, '-']);
-  return { key, content };
+  return keys.map((key) => ({
+    key,
+    content: run('aws', ['s3', 'cp', `s3://${bucket}/${key}`, '-']),
+  }));
 }
 
 function makeProjectSnapshot(project) {
@@ -152,8 +152,23 @@ function makeProjectSnapshot(project) {
   const decisions = queryTable(project.decisionTable, project.projectId);
   const latestReport = reports.at(-1) || null;
   const latestDecision = decisions.at(-1) || null;
-  const perfJson = downloadLatestS3Object(project.performanceBucket, project.performancePrefix, '.json');
-  const perfMd = downloadLatestS3Object(project.performanceBucket, project.performancePrefix, '.md');
+  const perfJsonObjects = downloadS3Objects(project.performanceBucket, project.performancePrefix, '.json');
+  const perfMdObjects = downloadS3Objects(project.performanceBucket, project.performancePrefix, '.md');
+  const perfJson = perfJsonObjects.at(-1) || null;
+  const perfMd = perfMdObjects.at(-1) || null;
+  const performanceHistory = perfJsonObjects.map((item) => {
+    try {
+      return {
+        object_key: item.key,
+        ...JSON.parse(item.content),
+      };
+    } catch {
+      return {
+        object_key: item.key,
+        raw: item.content,
+      };
+    }
+  });
   let performance = null;
   if (perfJson) {
     try {
@@ -175,6 +190,7 @@ function makeProjectSnapshot(project) {
       report_text: performanceSummary,
       report_json: performance || null,
     },
+    performance_history: performanceHistory,
     performanceObjectKey: perfJson ? perfJson.key : null,
     performanceMarkdownKey: perfMd ? perfMd.key : null,
   };

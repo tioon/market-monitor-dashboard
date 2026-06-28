@@ -196,6 +196,22 @@ function projectLabel(projectId) {
 }
 
 function getReturnRows(project) {
+  const history = Array.isArray(project.performance_history) ? project.performance_history : [];
+  const historicalRows = history.flatMap((item) => {
+    const rows = Array.isArray(item?.return_rows) ? item.return_rows : Array.isArray(item?.report_json?.return_rows) ? item.report_json.return_rows : [];
+    return Array.isArray(rows) ? rows : [];
+  });
+
+  if (historicalRows.length) {
+    const byDay = new Map();
+    for (const row of historicalRows) {
+      const key = dayOnly(row?.generated_at);
+      if (!key) continue;
+      byDay.set(key, row);
+    }
+    return [...byDay.values()].sort((a, b) => String(a.generated_at).localeCompare(String(b.generated_at)));
+  }
+
   const rows = project.performance?.report_json?.return_rows;
   return Array.isArray(rows) ? rows : [];
 }
@@ -218,9 +234,23 @@ function buildReportLedger(project) {
   const decisionMap = new Map(
     (project.decisions || []).map((item) => [dayOnly(item.generated_at), item.decision_snapshot || null])
   );
-  const performanceMap = new Map(
-    getReturnRows(project).map((row) => [dayOnly(row.generated_at), row])
-  );
+  const performanceMap = new Map();
+  for (const item of Array.isArray(project.performance_history) ? project.performance_history : []) {
+    const rows = Array.isArray(item?.return_rows) ? item.return_rows : Array.isArray(item?.report_json?.return_rows) ? item.report_json.return_rows : [];
+    if (!Array.isArray(rows)) continue;
+    for (const row of rows) {
+      const key = dayOnly(row.generated_at);
+      if (!key) continue;
+      performanceMap.set(key, row);
+    }
+  }
+  if (!performanceMap.size) {
+    for (const row of getReturnRows(project)) {
+      const key = dayOnly(row.generated_at);
+      if (!key) continue;
+      performanceMap.set(key, row);
+    }
+  }
 
   return (project.reports || [])
     .map((report, index) => {
@@ -955,6 +985,20 @@ function Simulator({ marketProject, cryptoProject }) {
   const blendedPath = portfolioTimeline.map((point) => point.runningCapital);
   const cashPath = activeRows.map(() => capital * cashExposure);
 
+  const marketPeriodRows = marketRowsInPeriod.map((row) => ({
+    day: dayOnly(row.generated_at),
+    market: row,
+    crypto: null,
+  }));
+  const cryptoPeriodRows = cryptoRowsInPeriod.map((row) => ({
+    day: dayOnly(row.generated_at),
+    market: null,
+    crypto: row,
+  }));
+  const marketPeriodTimeline = buildPnlTimeline(marketPeriodRows, capital, marketExposure, 0);
+  const cryptoPeriodTimeline = buildPnlTimeline(cryptoPeriodRows, capital, 0, cryptoExposure);
+  const blendedPeriodTimeline = buildPnlTimeline(activeRows, capital, normalizedMarketWeight, normalizedCryptoWeight);
+
   return (
     <section className="panel simulator">
       <div className="section-head">
@@ -1047,22 +1091,23 @@ function Simulator({ marketProject, cryptoProject }) {
           <span>Market allocation</span>
           <strong className={marketResult.tone === 'danger' ? 'down' : 'up'}>{marketResult.label} {marketResult.amount}</strong>
           <small>{pct(marketPeriodReturnPct, 2)} · 최종 {compactCurrency(marketFinal)}</small>
-          <small>기간 누적 손익: {pct(marketPeriodReturnPct, 2)} · 24h 누적</small>
-          <small>일별 손익(마지막 샘플): {marketDailyResult.label} {marketDailyResult.amount}</small>
+          <small>선택 기간의 일별 손익 합계</small>
+          <small>마지막 샘플: {marketDailyResult.label} {marketDailyResult.amount}</small>
         </div>
         <div className="projection-card">
           <span>Crypto allocation</span>
           <strong className={cryptoResult.tone === 'danger' ? 'down' : 'up'}>{cryptoResult.label} {cryptoResult.amount}</strong>
           <small>{pct(cryptoPeriodReturnPct, 2)} · 최종 {compactCurrency(cryptoFinal)}</small>
-          <small>기간 누적 손익: {pct(cryptoPeriodReturnPct, 2)} · 24h 누적</small>
-          <small>일별 손익(마지막 샘플): {cryptoDailyResult.label} {cryptoDailyResult.amount}</small>
+          <small>선택 기간의 일별 손익 합계</small>
+          <small>마지막 샘플: {cryptoDailyResult.label} {cryptoDailyResult.amount}</small>
         </div>
         <div className="projection-card accent">
           <span>Portfolio</span>
           <strong className={blendedResult.tone === 'danger' ? 'down' : 'up'}>{blendedResult.label} {blendedResult.amount}</strong>
           <small>{pct(portfolioPeriodReturnPct, 2)} · 최종 {compactCurrency(portfolioFinal)}</small>
           <small>기준: 시장 {Math.round(normalizedMarketWeight * 100)}% + 크립토 {Math.round(normalizedCryptoWeight * 100)}% + 현금 {Math.round(cashExposure * 100)}%</small>
-          <small>일별 손익(마지막 샘플): {blendedDailyResult.label} {blendedDailyResult.amount}</small>
+          <small>선택 기간의 일별 손익 합계</small>
+          <small>마지막 샘플: {blendedDailyResult.label} {blendedDailyResult.amount}</small>
         </div>
       </div>
 
@@ -1096,7 +1141,7 @@ function Simulator({ marketProject, cryptoProject }) {
       <div className="chart-stack">
         <FancyChart
           title="리포트별 누적 손익"
-          subtitle="날짜별 사후검증 수익률을 단순 합산한 순손익 경로"
+          subtitle="선택한 기간의 24h 사후검증 손익을 단순 합산한 순손익 경로"
           series={[
             {
               name: 'Cash',
@@ -1159,11 +1204,13 @@ function Simulator({ marketProject, cryptoProject }) {
           <span>Market 기간 누적</span>
           <strong className={marketPeriodReturnPct >= 0 ? 'up' : 'down'}>{pct(marketPeriodReturnPct, 2)}</strong>
           <small>{formatNetPnl(marketFinal - capital).amount}</small>
+          <small>기간에 따라 값이 달라져야 정상</small>
         </div>
         <div className="backtest-card">
           <span>Crypto 기간 누적</span>
           <strong className={cryptoPeriodReturnPct >= 0 ? 'up' : 'down'}>{pct(cryptoPeriodReturnPct, 2)}</strong>
           <small>{formatNetPnl(cryptoFinal - capital).amount}</small>
+          <small>기간에 따라 값이 달라져야 정상</small>
         </div>
       </div>
 
