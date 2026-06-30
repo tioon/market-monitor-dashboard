@@ -183,19 +183,9 @@ const PROJECT_CORE_LABELS = {
   },
 };
 
-const PROJECT_PERFORMANCE_TRACES = {
-  'market-agent': [
-    { key: 'spy_return_pct', label: 'SPY' },
-    { key: 'kospi_return_pct', label: 'KOSPI' },
-    { key: 'strategy_return_pct', label: '전략' },
-    { key: 'benchmark_return_pct', label: '벤치마크' },
-  ],
-  'crypto-agent': [
-    { key: 'btc_return_pct', label: 'BTC' },
-    { key: 'eth_return_pct', label: 'ETH' },
-    { key: 'strategy_return_pct', label: '전략' },
-    { key: 'benchmark_return_pct', label: '벤치마크' },
-  ],
+const PROJECT_CHANGE_KEYS = {
+  'market-agent': ['kospi', 'usdkrw', 'us10y', 'vix', 'dxy', 'hyg'],
+  'crypto-agent': ['btc_price', 'eth_price', 'btc_dom', 'eth_dom', 'fng_value', 'funding_btc', 'funding_eth'],
 };
 
 function projectCoreKeys(projectId) {
@@ -226,15 +216,17 @@ function buildCoreChangeRows(projectId, currentCoreData, previousCoreData) {
     .slice(0, 6);
 }
 
-function buildPerformanceTraceRows(projectId, performance) {
-  return (PROJECT_PERFORMANCE_TRACES[projectId] || [])
+function buildPerformanceTraceRows(projectId, currentCoreData, previousCoreData) {
+  return (PROJECT_CHANGE_KEYS[projectId] || [])
     .map((item) => {
-      const value = performance?.[item.key];
-      if (value === null || value === undefined) return null;
+      const current = currentCoreData?.[item];
+      const previous = previousCoreData?.[item];
+      if (isEmptyValue(current) || isEmptyValue(previous)) return null;
       return {
-        key: item.key,
-        label: item.label,
-        valueText: pct(value, 2),
+        key: item,
+        label: projectCoreLabel(projectId, item),
+        previousText: formatCoreValue(item, previous),
+        currentText: formatCoreValue(item, current),
       };
     })
     .filter(Boolean);
@@ -442,7 +434,11 @@ function ReportExplorer({ marketProject, cryptoProject }) {
     selectedRow?.decision?.core_data || {},
     previousRow?.decision?.core_data || {}
   );
-  const performanceTraceRows = buildPerformanceTraceRows(activeProject.projectId, selectedRow?.performance || null);
+  const performanceTraceRows = buildPerformanceTraceRows(
+    activeProject.projectId,
+    selectedRow?.decision?.core_data || {},
+    previousRow?.decision?.core_data || {}
+  );
   const reportText = selectedRow?.report?.report_text || '리포트 본문이 없습니다.';
   const brief = selectedRow?.decision?.decision_brief || [];
   const evidence = selectedRow?.decision?.core_evidence || [];
@@ -498,9 +494,15 @@ function ReportExplorer({ marketProject, cryptoProject }) {
             <small>{ledgerRows.length}개 저장됨</small>
           </div>
           <div className="report-list-scroll">
-            {ledgerRows.map((row) => {
+            {ledgerRows.map((row, rowIndex) => {
               const active = row.day === selectedDay;
               const perfTone = row.performance ? (row.performance.strategy_return_pct >= 0 ? 'up' : 'down') : '';
+              const previousLedgerRow = rowIndex > 0 ? ledgerRows[rowIndex - 1] : null;
+              const changeRows = buildPerformanceTraceRows(
+                activeProject.projectId,
+                row.decision?.core_data || {},
+                previousLedgerRow?.decision?.core_data || {}
+              );
               return (
                 <button
                   key={`${row.day}-${row.index}`}
@@ -523,10 +525,10 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                       {row.performance ? `${row.performance.strategy_return_pct >= 0 ? '+' : ''}${row.performance.strategy_return_pct.toFixed(2)}%` : '24h 없음'}
                     </span>
                   </div>
-                  {row.performance ? (
+                  {changeRows.length ? (
                     <div className="report-item-change">
-                      {buildPerformanceTraceRows(activeProject.projectId, row.performance).slice(0, 2).map((item) => (
-                        <span key={item.key}>{item.label} {item.valueText}</span>
+                      {changeRows.slice(0, 2).map((item) => (
+                        <span key={item.key}>{item.label} {item.previousText} → {item.currentText}</span>
                       ))}
                     </div>
                   ) : null}
@@ -678,15 +680,15 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                       {performanceTraceRows.map((item) => (
                         <div key={item.key} className="report-change-card">
                           <span>{item.label}</span>
-                          <strong>{item.valueText}</strong>
-                          <small>24h 실제 변화</small>
+                          <strong>{item.previousText} → {item.currentText}</strong>
+                          <small>전일값 → 당일값</small>
                         </div>
                       ))}
                     </div>
                   ) : null}
                   <p className="note">
                     {perf
-                      ? `24시간 실제 변화율을 그대로 보여준다. ${cleanText(perf.asset_name, '대상 자산')} / ${cleanText(perf.regime, 'regime 없음')}`
+                      ? `실제 지표값의 전일 대비 변화를 보여준다. ${cleanText(perf.asset_name, '대상 자산')} / ${cleanText(perf.regime, 'regime 없음')}`
                       : '이 리포트는 24시간 매칭 결과가 없어 성과 계산이 비어 있다.'}
                   </p>
                   {perf ? (
