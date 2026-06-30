@@ -226,27 +226,15 @@ function buildCoreChangeRows(projectId, currentCoreData, previousCoreData) {
     .slice(0, 6);
 }
 
-function formatNormalizedReturn(returnPct) {
-  const start = 100;
-  const end = start + toNumber(returnPct, 0);
-  return {
-    from: start.toFixed(2),
-    to: end.toFixed(2),
-  };
-}
-
 function buildPerformanceTraceRows(projectId, performance) {
   return (PROJECT_PERFORMANCE_TRACES[projectId] || [])
     .map((item) => {
       const value = performance?.[item.key];
       if (value === null || value === undefined) return null;
-      const normalized = formatNormalizedReturn(value);
       return {
         key: item.key,
         label: item.label,
-        from: normalized.from,
-        to: normalized.to,
-        pct: pct(value, 2),
+        valueText: pct(value, 2),
       };
     })
     .filter(Boolean);
@@ -538,7 +526,7 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                   {row.performance ? (
                     <div className="report-item-change">
                       {buildPerformanceTraceRows(activeProject.projectId, row.performance).slice(0, 2).map((item) => (
-                        <span key={item.key}>{item.label} {item.from} → {item.to}</span>
+                        <span key={item.key}>{item.label} {item.valueText}</span>
                       ))}
                     </div>
                   ) : null}
@@ -690,15 +678,15 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                       {performanceTraceRows.map((item) => (
                         <div key={item.key} className="report-change-card">
                           <span>{item.label}</span>
-                          <strong>{item.from} → {item.to}</strong>
-                          <small>{item.pct}</small>
+                          <strong>{item.valueText}</strong>
+                          <small>24h 실제 변화</small>
                         </div>
                       ))}
                     </div>
                   ) : null}
                   <p className="note">
                     {perf
-                      ? `기준값 100으로 정규화한 24시간 경로와 실제 가격 변화로 계산했다. ${cleanText(perf.asset_name, '대상 자산')} / ${cleanText(perf.regime, 'regime 없음')}`
+                      ? `24시간 실제 변화율을 그대로 보여준다. ${cleanText(perf.asset_name, '대상 자산')} / ${cleanText(perf.regime, 'regime 없음')}`
                       : '이 리포트는 24시간 매칭 결과가 없어 성과 계산이 비어 있다.'}
                   </p>
                   {perf ? (
