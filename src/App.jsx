@@ -152,6 +152,106 @@ function slugId(value) {
   return String(value || '').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
 }
 
+const PROJECT_CORE_PRIORITIES = {
+  'market-agent': ['spy_1mo_pct', 'rsp_1mo_pct', 'iwm_1mo_pct', 'hyg_1mo_pct', 'vix', 'usdkrw', 'us10y', 'shiller_pe', 'earnings_yield', 'kospi'],
+  'crypto-agent': ['btc_24h', 'eth_24h', 'btc_7d', 'eth_fee_7d', 'btc_active_7d', 'eth_tx_7d', 'fear_greed', 'stablecoin_supply', 'mcap'],
+};
+
+const PROJECT_CORE_LABELS = {
+  'market-agent': {
+    spy_1mo_pct: 'SPY 1개월',
+    rsp_1mo_pct: 'RSP 1개월',
+    iwm_1mo_pct: 'IWM 1개월',
+    hyg_1mo_pct: 'HYG 1개월',
+    vix: 'VIX',
+    usdkrw: 'USD/KRW',
+    us10y: 'US 10Y',
+    shiller_pe: 'CAPE',
+    earnings_yield: 'Earnings Yield',
+    kospi: 'KOSPI',
+  },
+  'crypto-agent': {
+    btc_24h: 'BTC 24h',
+    eth_24h: 'ETH 24h',
+    btc_7d: 'BTC 7d',
+    eth_fee_7d: 'ETH fee 7d',
+    btc_active_7d: 'BTC active 7d',
+    eth_tx_7d: 'ETH tx 7d',
+    fear_greed: 'Fear & Greed',
+    stablecoin_supply: 'Stablecoin supply',
+    mcap: 'Market cap',
+  },
+};
+
+const PROJECT_PERFORMANCE_TRACES = {
+  'market-agent': [
+    { key: 'spy_return_pct', label: 'SPY' },
+    { key: 'kospi_return_pct', label: 'KOSPI' },
+    { key: 'strategy_return_pct', label: '전략' },
+    { key: 'benchmark_return_pct', label: '벤치마크' },
+  ],
+  'crypto-agent': [
+    { key: 'btc_return_pct', label: 'BTC' },
+    { key: 'eth_return_pct', label: 'ETH' },
+    { key: 'strategy_return_pct', label: '전략' },
+    { key: 'benchmark_return_pct', label: '벤치마크' },
+  ],
+};
+
+function projectCoreKeys(projectId) {
+  return PROJECT_CORE_PRIORITIES[projectId] || [];
+}
+
+function projectCoreLabel(projectId, key) {
+  return PROJECT_CORE_LABELS[projectId]?.[key] || key;
+}
+
+function buildCoreChangeRows(projectId, currentCoreData, previousCoreData) {
+  return projectCoreKeys(projectId)
+    .map((key) => {
+      const current = currentCoreData?.[key];
+      const previous = previousCoreData?.[key];
+      if (isEmptyValue(current) || isEmptyValue(previous)) return null;
+      const currentText = formatCoreValue(key, current);
+      const previousText = formatCoreValue(key, previous);
+      if (currentText === previousText) return null;
+      return {
+        key,
+        label: projectCoreLabel(projectId, key),
+        currentText,
+        previousText,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 6);
+}
+
+function formatNormalizedReturn(returnPct) {
+  const start = 100;
+  const end = start + toNumber(returnPct, 0);
+  return {
+    from: start.toFixed(2),
+    to: end.toFixed(2),
+  };
+}
+
+function buildPerformanceTraceRows(projectId, performance) {
+  return (PROJECT_PERFORMANCE_TRACES[projectId] || [])
+    .map((item) => {
+      const value = performance?.[item.key];
+      if (value === null || value === undefined) return null;
+      const normalized = formatNormalizedReturn(value);
+      return {
+        key: item.key,
+        label: item.label,
+        from: normalized.from,
+        to: normalized.to,
+        pct: pct(value, 2),
+      };
+    })
+    .filter(Boolean);
+}
+
 function reportRows(project) {
   return (project.decisions || [])
     .map((item) => {
@@ -342,10 +442,19 @@ function ReportExplorer({ marketProject, cryptoProject }) {
     }
   }, [ledgerKey, selectedDay, ledgerRows]);
 
-  const selectedRow = ledgerRows.find((row) => row.day === selectedDay) || ledgerRows.at(-1) || null;
+  const selectedIndex = ledgerRows.findIndex((row) => row.day === selectedDay);
+  const selectedRow = selectedIndex >= 0 ? ledgerRows[selectedIndex] : ledgerRows.at(-1) || null;
+  const selectedLedgerIndex = selectedIndex >= 0 ? selectedIndex : ledgerRows.length - 1;
+  const previousRow = selectedLedgerIndex > 0 ? ledgerRows[selectedLedgerIndex - 1] : null;
   const projectPerf = performanceSummary(activeProject) || {};
   const metrics = reportKeyMetrics(activeProject);
   const coreData = summarizeCoreData(selectedRow?.decision?.core_data || {}, activeProject.projectId);
+  const coreChangeRows = buildCoreChangeRows(
+    activeProject.projectId,
+    selectedRow?.decision?.core_data || {},
+    previousRow?.decision?.core_data || {}
+  );
+  const performanceTraceRows = buildPerformanceTraceRows(activeProject.projectId, selectedRow?.performance || null);
   const reportText = selectedRow?.report?.report_text || '리포트 본문이 없습니다.';
   const brief = selectedRow?.decision?.decision_brief || [];
   const evidence = selectedRow?.decision?.core_evidence || [];
@@ -427,6 +536,13 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                     </span>
                   </div>
                   {row.performance ? (
+                    <div className="report-item-change">
+                      {buildPerformanceTraceRows(activeProject.projectId, row.performance).slice(0, 2).map((item) => (
+                        <span key={item.key}>{item.label} {item.from} → {item.to}</span>
+                      ))}
+                    </div>
+                  ) : null}
+                  {row.performance ? (
                     <div className="report-item-pnl">
                       <span>1천만 원 기준</span>
                       <strong className={row.performance.strategy_return_pct >= 0 ? 'up' : 'down'}>
@@ -485,11 +601,27 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                   <div className="chip-grid">
                     {coreData.map((item) => (
                       <span key={item.key} className="analysis-chip">
-                        <strong>{item.key}</strong>
+                        <strong>{projectCoreLabel(activeProject.projectId, item.key)}</strong>
                         <small>{formatCoreValue(item.key, item.value)}</small>
                       </span>
                     ))}
                   </div>
+                </div>
+
+                <div className="analysis-block">
+                  <h5>전일 대비 변화</h5>
+                  {coreChangeRows.length ? (
+                    <div className="chip-grid">
+                      {coreChangeRows.map((item) => (
+                        <span key={item.key} className="analysis-chip">
+                          <strong>{item.label}</strong>
+                          <small>{item.previousText} → {item.currentText}</small>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="note">이전 리포트와 비교할 변화 데이터가 없습니다.</p>
+                  )}
                 </div>
 
                 <div className="analysis-block">
@@ -553,9 +685,20 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                       <small>순손익 환산 기준</small>
                     </div>
                   </div>
+                  {performanceTraceRows.length ? (
+                    <div className="report-change-grid">
+                      {performanceTraceRows.map((item) => (
+                        <div key={item.key} className="report-change-card">
+                          <span>{item.label}</span>
+                          <strong>{item.from} → {item.to}</strong>
+                          <small>{item.pct}</small>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                   <p className="note">
                     {perf
-                      ? `기준 시점에서 24시간 뒤 매칭된 실제 가격 변화로 계산했다. ${cleanText(perf.asset_name, '대상 자산')} / ${cleanText(perf.regime, 'regime 없음')}`
+                      ? `기준값 100으로 정규화한 24시간 경로와 실제 가격 변화로 계산했다. ${cleanText(perf.asset_name, '대상 자산')} / ${cleanText(perf.regime, 'regime 없음')}`
                       : '이 리포트는 24시간 매칭 결과가 없어 성과 계산이 비어 있다.'}
                   </p>
                   {perf ? (

@@ -331,6 +331,23 @@ button {
   font-size: 0.84rem;
 }
 
+.report-item-change {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+}
+
+.report-item-change span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
 .report-item-bottom .up {
   color: #c9ffe9;
 }
@@ -530,6 +547,43 @@ button {
   color: var(--muted);
   font-family: 'IBM Plex Mono', monospace;
   font-size: 0.76rem;
+}
+
+.report-change-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.report-change-card {
+  padding: 12px 13px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.report-change-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.report-change-card strong {
+  display: block;
+  margin-top: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.92rem;
+}
+
+.report-change-card small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.74rem;
 }
 
 .empty-report {
@@ -1218,7 +1272,8 @@ tbody tr:hover td {
   .report-summary,
   .report-layout,
   .detail-grid,
-  .report-body-grid {
+  .report-body-grid,
+  .report-change-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1252,7 +1307,8 @@ tbody tr:hover td {
   .report-layout,
   .report-body-grid,
   .detail-grid,
-  .two-column-notes {
+  .two-column-notes,
+  .report-change-grid {
     grid-template-columns: 1fr;
   }
 
