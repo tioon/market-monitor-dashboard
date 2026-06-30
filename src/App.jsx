@@ -157,6 +157,11 @@ const PROJECT_CORE_PRIORITIES = {
   'crypto-agent': ['btc_24h', 'eth_24h', 'btc_7d', 'eth_fee_7d', 'btc_active_7d', 'eth_tx_7d', 'fear_greed', 'stablecoin_supply', 'mcap'],
 };
 
+const PROJECT_LEVEL_PRIORITIES = {
+  'market-agent': ['kospi', 'kosdaq', 'usdkrw', 'us10y', 'dxy', 'vix', 'sp500_pe', 'shiller_pe', 'earnings_yield', 't10y2y'],
+  'crypto-agent': ['btc_price', 'eth_price', 'btc_dom', 'eth_dom', 'fng_value', 'funding_btc', 'funding_eth', 'btc_sma20', 'btc_sma50', 'btc_sma200'],
+};
+
 const PROJECT_CORE_LABELS = {
   'market-agent': {
     kospi: 'KOSPI',
@@ -187,16 +192,12 @@ const PROJECT_CORE_LABELS = {
   },
 };
 
-function projectCoreKeys(projectId) {
-  return PROJECT_CORE_PRIORITIES[projectId] || [];
-}
-
 function projectCoreLabel(projectId, key) {
   return PROJECT_CORE_LABELS[projectId]?.[key] || key;
 }
 
-function buildCoreChangeRows(projectId, currentCoreData, previousCoreData) {
-  return projectCoreKeys(projectId)
+function buildLevelRows(projectId, currentCoreData, previousCoreData) {
+  return (PROJECT_LEVEL_PRIORITIES[projectId] || [])
     .map((key) => {
       const current = currentCoreData?.[key];
       const previous = previousCoreData?.[key];
@@ -212,57 +213,7 @@ function buildCoreChangeRows(projectId, currentCoreData, previousCoreData) {
       };
     })
     .filter(Boolean)
-    .slice(0, 6);
-}
-
-function buildPerformanceBreakdownRows(projectId, performance, capital) {
-  if (!performance) return [];
-
-  const assetRows = projectId === 'market-agent'
-    ? [
-        { key: 'spy_return_pct', label: '미국 레그', value: performance.spy_return_pct, amount: pnlFromReturnPct(performance.spy_return_pct, capital) },
-        { key: 'kospi_return_pct', label: '한국 레그', value: performance.kospi_return_pct, amount: pnlFromReturnPct(performance.kospi_return_pct, capital) },
-      ]
-    : [
-        { key: 'btc_return_pct', label: 'BTC 레그', value: performance.btc_return_pct, amount: pnlFromReturnPct(performance.btc_return_pct, capital) },
-        { key: 'eth_return_pct', label: 'ETH 레그', value: performance.eth_return_pct, amount: pnlFromReturnPct(performance.eth_return_pct, capital) },
-      ];
-
-  const benchmarkAmount = pnlFromReturnPct(performance.benchmark_return_pct, capital);
-  const exposureAmount = pnlFromReturnPct(performance.benchmark_return_pct * toNumber(performance.exposure, 0), capital);
-  const tradeCostAmount = pnlFromReturnPct(-toNumber(performance.trade_cost_pct, 0), capital);
-
-  return [
-    ...assetRows.filter((row) => row.value !== null && row.value !== undefined),
-    {
-      key: 'benchmark_return_pct',
-      label: '바스켓 평균',
-      value: performance.benchmark_return_pct,
-      amount: benchmarkAmount,
-      caption: performance.benchmark_weights?.method || '가중 평균',
-    },
-    {
-      key: 'exposure',
-      label: '노출 반영',
-      value: performance.benchmark_return_pct * toNumber(performance.exposure, 0),
-      amount: exposureAmount,
-      caption: `${Math.round(toNumber(performance.exposure, 0) * 100)}% 적용`,
-    },
-    {
-      key: 'trade_cost_pct',
-      label: '거래비용',
-      value: -toNumber(performance.trade_cost_pct, 0),
-      amount: tradeCostAmount,
-      caption: `턴오버 ${pct(performance.turnover_pct * 100, 0)}`,
-    },
-    {
-      key: 'strategy_return_pct',
-      label: '전략 최종',
-      value: performance.strategy_return_pct,
-      amount: pnlFromReturnPct(performance.strategy_return_pct, capital),
-      caption: '최종 순손익',
-    },
-  ];
+    .slice(0, 8);
 }
 
 function reportRows(project) {
@@ -460,7 +411,12 @@ function ReportExplorer({ marketProject, cryptoProject }) {
   const projectPerf = performanceSummary(activeProject) || {};
   const metrics = reportKeyMetrics(activeProject);
   const coreData = summarizeCoreData(selectedRow?.decision?.core_data || {}, activeProject.projectId);
-  const performanceBreakdownRows = buildPerformanceBreakdownRows(activeProject.projectId, selectedRow?.performance || null, analysisCapital);
+  const previousRow = selectedIndex > 0 ? ledgerRows[selectedIndex - 1] : null;
+  const levelRows = buildLevelRows(
+    activeProject.projectId,
+    selectedRow?.decision?.core_data || {},
+    previousRow?.decision?.core_data || {}
+  );
   const reportText = selectedRow?.report?.report_text || '리포트 본문이 없습니다.';
   const brief = selectedRow?.decision?.decision_brief || [];
   const evidence = selectedRow?.decision?.core_evidence || [];
@@ -519,7 +475,13 @@ function ReportExplorer({ marketProject, cryptoProject }) {
             {ledgerRows.map((row) => {
               const active = row.day === selectedDay;
               const perfTone = row.performance ? (row.performance.strategy_return_pct >= 0 ? 'up' : 'down') : '';
-              const breakdownRows = buildPerformanceBreakdownRows(activeProject.projectId, row.performance, analysisCapital);
+              const rowIndex = ledgerRows.findIndex((item) => item.day === row.day);
+              const previousLedgerRow = rowIndex > 0 ? ledgerRows[rowIndex - 1] : null;
+              const levelSummaryRows = buildLevelRows(
+                activeProject.projectId,
+                row.decision?.core_data || {},
+                previousLedgerRow?.decision?.core_data || {}
+              );
               return (
                 <button
                   key={`${row.day}-${row.index}`}
@@ -542,10 +504,10 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                       {row.performance ? `${row.performance.strategy_return_pct >= 0 ? '+' : ''}${row.performance.strategy_return_pct.toFixed(2)}%` : '24h 없음'}
                     </span>
                   </div>
-                  {breakdownRows.length ? (
+                  {levelSummaryRows.length ? (
                     <div className="report-item-change">
-                      {breakdownRows.slice(0, 2).map((item) => (
-                        <span key={item.key}>{item.label} {pct(item.value, 2)}</span>
+                      {levelSummaryRows.slice(0, 2).map((item) => (
+                        <span key={item.key}>{item.label} {item.currentText}</span>
                       ))}
                     </div>
                   ) : null}
@@ -616,19 +578,19 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                 </div>
 
                 <div className="analysis-block">
-                  <h5>성과 분해</h5>
-                  {performanceBreakdownRows.length ? (
+                  <h5>지표 레벨</h5>
+                  {levelRows.length ? (
                     <div className="report-change-grid">
-                      {performanceBreakdownRows.map((item) => (
+                      {levelRows.map((item) => (
                         <div key={item.key} className="report-change-card">
                           <span>{item.label}</span>
-                          <strong>{pct(item.value, 2)} · {formatNetPnl(item.amount).amount}</strong>
-                          <small>{item.caption}</small>
+                          <strong>{item.previousText} → {item.currentText}</strong>
+                          <small>전일값 → 당일값</small>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="note">24h 성과를 분해할 데이터가 없습니다.</p>
+                    <p className="note">지표 레벨 비교 데이터가 없습니다.</p>
                   )}
                 </div>
 
@@ -693,20 +655,20 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                       <small>순손익 환산 기준</small>
                     </div>
                   </div>
-                  {performanceBreakdownRows.length ? (
+                  {levelRows.length ? (
                     <div className="report-change-grid">
-                      {performanceBreakdownRows.slice(0, 4).map((item) => (
+                      {levelRows.slice(0, 4).map((item) => (
                         <div key={item.key} className="report-change-card">
                           <span>{item.label}</span>
-                          <strong>{pct(item.value, 2)} · {formatNetPnl(item.amount).amount}</strong>
-                          <small>{item.caption}</small>
+                          <strong>{item.previousText} → {item.currentText}</strong>
+                          <small>전일값 → 당일값</small>
                         </div>
                       ))}
                     </div>
                   ) : null}
                   <p className="note">
                     {perf
-                      ? `${cleanText(perf.asset_name, '대상 자산')}의 24h 레그 수익률, 노출, 거래비용을 합쳐 최종 성과를 만든다. ${cleanText(perf.regime, 'regime 없음')}`
+                      ? `${cleanText(perf.asset_name, '대상 자산')}의 실제 지표 레벨 변화와 24h 레그 수익률, 노출, 거래비용을 함께 본다. ${cleanText(perf.regime, 'regime 없음')}`
                       : '이 리포트는 24시간 매칭 결과가 없어 성과 계산이 비어 있다.'}
                   </p>
                   {perf ? (
@@ -716,17 +678,6 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                       <li>기준 자산: {cleanText(perf.asset_name)}</li>
                       <li>1천만 원 기준 순손익: {reportPnl?.amount || '-'}</li>
                       <li>항상투자: {pct(perf.always_invest_return_pct, 2)} · 현금대비: {pct(perf.always_cash_return_pct, 2)}</li>
-                      {activeProject.projectId === 'market-agent' ? (
-                        <>
-                          <li>미국 레그: {pct(perf.spy_return_pct, 2)} · {formatNetPnl(pnlFromReturnPct(perf.spy_return_pct, analysisCapital)).amount}</li>
-                          <li>한국 레그: {pct(perf.kospi_return_pct, 2)} · {formatNetPnl(pnlFromReturnPct(perf.kospi_return_pct, analysisCapital)).amount}</li>
-                        </>
-                      ) : (
-                        <>
-                          <li>BTC 레그: {pct(perf.btc_return_pct, 2)} · {formatNetPnl(pnlFromReturnPct(perf.btc_return_pct, analysisCapital)).amount}</li>
-                          <li>ETH 레그: {pct(perf.eth_return_pct, 2)} · {formatNetPnl(pnlFromReturnPct(perf.eth_return_pct, analysisCapital)).amount}</li>
-                        </>
-                      )}
                     </ul>
                   ) : null}
                 </div>
