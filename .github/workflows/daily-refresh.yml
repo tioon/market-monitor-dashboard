@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 concurrency:
   group: daily-dashboard-refresh
@@ -25,6 +26,18 @@ jobs:
       AWS_REGION: ap-northeast-2
 
     steps:
+      - name: Validate AWS configuration
+        run: |
+          if [ -n "${{ secrets.AWS_ROLE_ARN }}" ]; then
+            exit 0
+          fi
+
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ] || [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+            echo "Missing AWS configuration."
+            echo "Set either AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY, or AWS_ROLE_ARN for OIDC."
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -40,6 +53,14 @@ jobs:
         run: npm ci
 
       - name: Configure AWS credentials
+        if: ${{ secrets.AWS_ROLE_ARN != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS credentials from static keys
+        if: ${{ secrets.AWS_ROLE_ARN == '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
