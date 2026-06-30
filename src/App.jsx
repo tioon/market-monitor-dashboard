@@ -153,22 +153,26 @@ function slugId(value) {
 }
 
 const PROJECT_CORE_PRIORITIES = {
-  'market-agent': ['spy_1mo_pct', 'rsp_1mo_pct', 'iwm_1mo_pct', 'hyg_1mo_pct', 'vix', 'usdkrw', 'us10y', 'shiller_pe', 'earnings_yield', 'kospi'],
+  'market-agent': ['kospi', 'kosdaq', 'usdkrw', 'us10y', 'dxy', 'vix', 'sp500_pe', 'shiller_pe', 'earnings_yield', 't10y2y', 'spy_1mo_pct', 'rsp_1mo_pct', 'iwm_1mo_pct', 'hyg_1mo_pct'],
   'crypto-agent': ['btc_24h', 'eth_24h', 'btc_7d', 'eth_fee_7d', 'btc_active_7d', 'eth_tx_7d', 'fear_greed', 'stablecoin_supply', 'mcap'],
 };
 
 const PROJECT_CORE_LABELS = {
   'market-agent': {
+    kospi: 'KOSPI',
+    kosdaq: 'KOSDAQ',
+    usdkrw: 'USD/KRW',
+    us10y: 'US 10Y',
+    dxy: 'DXY',
+    vix: 'VIX',
+    sp500_pe: 'S&P500 P/E',
+    shiller_pe: 'CAPE',
+    earnings_yield: 'Earnings Yield',
+    t10y2y: '10Y-2Y',
     spy_1mo_pct: 'SPY 1개월',
     rsp_1mo_pct: 'RSP 1개월',
     iwm_1mo_pct: 'IWM 1개월',
     hyg_1mo_pct: 'HYG 1개월',
-    vix: 'VIX',
-    usdkrw: 'USD/KRW',
-    us10y: 'US 10Y',
-    shiller_pe: 'CAPE',
-    earnings_yield: 'Earnings Yield',
-    kospi: 'KOSPI',
   },
   'crypto-agent': {
     btc_24h: 'BTC 24h',
@@ -184,7 +188,7 @@ const PROJECT_CORE_LABELS = {
 };
 
 const PROJECT_CHANGE_KEYS = {
-  'market-agent': ['kospi', 'usdkrw', 'us10y', 'vix', 'dxy', 'hyg'],
+  'market-agent': ['kospi', 'kosdaq', 'usdkrw', 'us10y', 'dxy', 'vix', 'sp500_pe', 'shiller_pe'],
   'crypto-agent': ['btc_price', 'eth_price', 'btc_dom', 'eth_dom', 'fng_value', 'funding_btc', 'funding_eth'],
 };
 
