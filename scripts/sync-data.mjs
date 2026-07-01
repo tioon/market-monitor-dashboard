@@ -81,13 +81,22 @@ function compactDecisionSnapshot(snapshot) {
   };
 }
 
+function normalizeReportText(reportText) {
+  if (reportText === null || reportText === undefined) return reportText;
+  const text = String(reportText);
+  const failureMarker = '\n\n[AI 리포트 생성 실패:';
+  const markerIndex = text.indexOf(failureMarker);
+  const normalized = markerIndex >= 0 ? text.slice(0, markerIndex) : text;
+  return normalized.replace(/\s+$/u, '');
+}
+
 function compactReport(record) {
   if (!record) return null;
   return {
     record_type: record.record_type || 'report',
     record_key: record.record_key || null,
     generated_at: record.generated_at,
-    report_text: record.report_text,
+    report_text: normalizeReportText(record.report_text),
   };
 }
 

@@ -26,6 +26,10 @@ function pct(value, digits = 1) {
   return `${number >= 0 ? '+' : ''}${number.toFixed(digits)}%`;
 }
 
+function rateText(value, digits = 1) {
+  return `${toNumber(value, 0).toFixed(digits)}%`;
+}
+
 function currency(value) {
   return new Intl.NumberFormat('ko-KR', {
     style: 'currency',
@@ -57,6 +61,165 @@ function formatPercentInt(value) {
   return text === '-' ? text : `${text}%`;
 }
 
+const VERDICT_ORDER = ['중립~우호', '주의', '위험 우위'];
+const VERDICT_RANK = Object.fromEntries(VERDICT_ORDER.map((label, index) => [label, index]));
+
+function normalizeVerdict(value) {
+  const text = cleanText(value, '');
+  if (!text) return null;
+  if (VERDICT_RANK[text] !== undefined) return text;
+  if (text.includes('위험')) return '위험 우위';
+  if (text.includes('주의') || text.includes('혼조')) return '주의';
+  if (text.includes('우호') || text.includes('중립')) return '중립~우호';
+  return null;
+}
+
+function verdictRank(value) {
+  const normalized = normalizeVerdict(value);
+  return normalized === null ? null : VERDICT_RANK[normalized];
+}
+
+function verdictDistance(predicted, actual) {
+  const predRank = verdictRank(predicted);
+  const actualRank = verdictRank(actual);
+  if (predRank === null || actualRank === null) return null;
+  return Math.abs(predRank - actualRank);
+}
+
+function verdictCost(predicted, actual) {
+  const distance = verdictDistance(predicted, actual);
+  if (distance === null) return null;
+  if (distance === 0) return 0;
+  if (distance === 1) return 1;
+  return 3;
+}
+
+function parseReportVerdict(reportText) {
+  const match = String(reportText || '').match(/판단:\s*([^|\n]+)/);
+  return match ? normalizeVerdict(match[1]) : null;
+}
+
+function scoreToVerdict(score, lowThreshold, highThreshold) {
+  const value = toNumber(score, 0);
+  if (value >= highThreshold) return '위험 우위';
+  if (value >= lowThreshold) return '주의';
+  return '중립~우호';
+}
+
+function summarizeReturnRows(rows) {
+  const normalized = Array.isArray(rows) ? rows : [];
+  return normalized.reduce(
+    (acc, row) => {
+      acc.strategy += toNumber(row?.strategy_return_pct, 0);
+      acc.benchmark += toNumber(
+        row?.benchmark_return_pct ??
+          row?.spy_return_pct ??
+          row?.kospi_return_pct ??
+          row?.asset_return_pct,
+        0
+      );
+      acc.exposure += toNumber(row?.exposure, 0);
+      acc.count += 1;
+      return acc;
+    },
+    { strategy: 0, benchmark: 0, exposure: 0, count: 0 }
+  );
+}
+
+function computeMaxDrawdownPct(rows, key = 'strategy_return_pct') {
+  const normalized = Array.isArray(rows) ? rows : [];
+  let capital = 1;
+  let peak = 1;
+  let maxDrawdown = 0;
+
+  for (const row of normalized) {
+    capital *= 1 + toNumber(row?.[key], 0) / 100;
+    peak = Math.max(peak, capital);
+    const drawdown = ((capital / peak) - 1) * 100;
+    maxDrawdown = Math.min(maxDrawdown, drawdown);
+  }
+
+  return maxDrawdown;
+}
+
+function applyVerdictHysteresis(rows, lowThreshold, highThreshold, margin = 0.4) {
+  const ordered = [...rows].sort((a, b) => String(a.generated_at).localeCompare(String(b.generated_at)));
+  const recent = ordered.slice(-2);
+  if (!recent.length) return null;
+
+  const latest = scoreToVerdict(recent.at(-1)?.predicted_score, lowThreshold, highThreshold);
+  if (recent.length === 1) return latest;
+
+  const previous = scoreToVerdict(recent.at(-2)?.predicted_score, lowThreshold, highThreshold);
+  if (latest === previous) return latest;
+
+  const latestScore = toNumber(recent.at(-1)?.predicted_score, 0);
+  const distanceToLow = Math.abs(latestScore - lowThreshold);
+  const distanceToHigh = Math.abs(latestScore - highThreshold);
+  if (Math.min(distanceToLow, distanceToHigh) <= margin) {
+    return previous;
+  }
+
+  return latest;
+}
+
+function optimizeVerdictThresholds(rows) {
+  const scores = [...new Set((Array.isArray(rows) ? rows : []).map((row) => toNumber(row?.predicted_score, NaN)).filter(Number.isFinite))].sort((a, b) => a - b);
+  if (!scores.length) return null;
+
+  const candidates = new Set([scores[0] - 1, scores.at(-1) + 1]);
+  for (let index = 0; index < scores.length - 1; index += 1) {
+    candidates.add((scores[index] + scores[index + 1]) / 2);
+  }
+
+  const candidateList = [...candidates].sort((a, b) => a - b);
+  let best = null;
+
+  for (const low of candidateList) {
+    for (const high of candidateList) {
+      if (!(low < high)) continue;
+
+      let exactHits = 0;
+      let weightedCost = 0;
+      let mildMisses = 0;
+      let strongMisses = 0;
+
+      for (const row of rows) {
+        const predicted = scoreToVerdict(row?.predicted_score, low, high);
+        const actual = normalizeVerdict(row?.actual_verdict);
+        const distance = verdictDistance(predicted, actual);
+        if (distance === 0) exactHits += 1;
+        else if (distance === 1) mildMisses += 1;
+        else if (distance === 2) strongMisses += 1;
+        weightedCost += verdictCost(predicted, actual) ?? 0;
+      }
+
+      const candidate = {
+        low,
+        high,
+        exactHits,
+        exactAccuracy: exactHits / rows.length,
+        weightedAccuracy: 1 - weightedCost / (rows.length * 3),
+        mildMisses,
+        strongMisses,
+        weightedCost,
+      };
+
+      if (
+        !best ||
+        candidate.weightedCost < best.weightedCost ||
+        (candidate.weightedCost === best.weightedCost && candidate.exactHits > best.exactHits) ||
+        (candidate.weightedCost === best.weightedCost && candidate.exactHits === best.exactHits && candidate.strongMisses < best.strongMisses) ||
+        (candidate.weightedCost === best.weightedCost && candidate.exactHits === best.exactHits && candidate.strongMisses === best.strongMisses && candidate.low > best.low)
+      ) {
+        best = candidate;
+      }
+    }
+  }
+
+  return best;
+}
+
 function latestDecision(project) {
   return project.latestDecision?.decision_snapshot || null;
 }
@@ -66,31 +229,9 @@ function latestReport(project) {
 }
 
 function performanceSummary(project) {
-  const text = project.performance?.report_text || '';
   const report = project.performance?.report_json || {};
+  const evaluationRows = Array.isArray(report.rows) ? report.rows : [];
   const returnRows = Array.isArray(report.return_rows) ? report.return_rows : [];
-  if (!text) return null;
-
-  const escapeRegExp = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pick = (label) => {
-    const match = text.match(new RegExp(`${escapeRegExp(label)}:\\s*([^\\n]+)`));
-    return match ? match[1].trim() : '-';
-  };
-
-  const firstPick = (...labels) => {
-    for (const label of labels) {
-      const value = pick(label);
-      if (value !== '-') return value;
-    }
-    return '-';
-  };
-
-  const avgReturn = (key) => {
-    if (!returnRows.length) return null;
-    const total = returnRows.reduce((sum, row) => sum + toNumber(row?.[key], 0), 0);
-    return total / returnRows.length;
-  };
-
   const calibration = report.calibration || {};
   const benchmarkWeights = calibration.benchmark_weights || {};
   const isMarket = project.projectId === 'market-agent';
@@ -98,17 +239,59 @@ function performanceSummary(project) {
   const rightLabel = isMarket ? 'KOSPI' : 'ETH';
   const leftWeight = toNumber(benchmarkWeights.left_weight, 0.5);
   const rightWeight = toNumber(benchmarkWeights.right_weight, 0.5);
+  const evaluation = evaluateVerdictRows(evaluationRows);
+  const latestDecisionData = latestDecision(project) || {};
+  const latestScore = toNumber(
+    latestDecisionData.dashboard?.score ??
+      latestDecisionData.ai_signal?.rule_score ??
+      latestDecisionData.ai_signal?.combined_score ??
+      evaluationRows.at(-1)?.predicted_score,
+    0
+  );
+  const latestThresholds = evaluation.bestThresholds;
+  const tunedVerdict = latestThresholds
+    ? scoreToVerdict(latestScore, latestThresholds.low, latestThresholds.high)
+    : normalizeVerdict(latestDecisionData.dashboard?.verdict || latestDecisionData.ai_signal?.verdict);
+  const hysteresisVerdict = latestThresholds
+    ? applyVerdictHysteresis(evaluationRows, latestThresholds.low, latestThresholds.high)
+    : tunedVerdict;
+  const guard = project.performance?.report_json?.reliability_guard || {};
+  const r2 = toNumber(latestDecisionData.calibration?.model?.r2, 0);
+  const recommendedGuard = buildAdaptiveGuard({
+    exactAccuracy: evaluation.exactAccuracy,
+    weightedAccuracy: evaluation.weightedAccuracy,
+    strongMissRate: evaluation.count ? evaluation.strongMisses / evaluation.count : 0,
+    r2,
+    currentGuard: guard,
+  });
+  const returns = summarizeReturnRows(returnRows);
+  const strategyReturn = returns.count ? pct(returns.strategy, 2) : '-';
+  const benchmarkReturn = returns.count ? pct(returns.benchmark, 2) : '-';
+  const maxDrawdown = returnRows.length ? computeMaxDrawdownPct(returnRows, 'strategy_return_pct') : 0;
 
   return {
-    accuracy: firstPick('판단 적중률'),
-    mae: pick('평균 점수 오차'),
-    winRate: firstPick('전략 승률'),
-    maxDrawdown: firstPick('최대 낙폭'),
-    strategyReturn: firstPick('전략 단순합 수익률', '전략 누적 수익률'),
-    benchmarkReturn: firstPick('벤치마크 단순합 수익률', 'S&P 500(원화) 단순합 수익률', 'KRW 바스켓 단순합 수익률', 'S&P 500(원화) 누적 수익률', 'KRW 바스켓 누적 수익률'),
-    sampleCount: returnRows.length,
-    avgStrategyReturnPct: avgReturn('strategy_return_pct'),
-    avgBenchmarkReturnPct: avgReturn('benchmark_return_pct') ?? avgReturn('spy_return_pct') ?? avgReturn('kospi_return_pct') ?? avgReturn('asset_return_pct'),
+    exactAccuracy: evaluation.exactAccuracy,
+    exactAccuracyText: rateText(evaluation.exactAccuracy * 100, 1),
+    weightedAccuracy: evaluation.weightedAccuracy,
+    weightedAccuracyText: rateText(evaluation.weightedAccuracy * 100, 1),
+    mildMissRate: evaluation.count ? evaluation.mildMisses / evaluation.count : 0,
+    mildMissRateText: rateText((evaluation.count ? evaluation.mildMisses / evaluation.count : 0) * 100, 1),
+    strongMissRate: evaluation.count ? evaluation.strongMisses / evaluation.count : 0,
+    strongMissRateText: rateText((evaluation.count ? evaluation.strongMisses / evaluation.count : 0) * 100, 1),
+    componentHitRate: evaluation.componentHitRate,
+    componentHitRateText: rateText(evaluation.componentHitRate * 100, 1),
+    confusion: evaluation.confusion,
+    thresholdLow: latestThresholds?.low ?? null,
+    thresholdHigh: latestThresholds?.high ?? null,
+    thresholdText: latestThresholds ? `${latestThresholds.low.toFixed(2)} / ${latestThresholds.high.toFixed(2)}` : '-',
+    tunedVerdict,
+    hysteresisVerdict,
+    recommendedGuard,
+    strategyReturn,
+    benchmarkReturn,
+    maxDrawdownText: returnRows.length ? pct(maxDrawdown, 2) : '-',
+    sampleCount: evaluation.count,
+    returnSampleCount: returnRows.length,
     exposureRate: returnRows.length ? returnRows.reduce((sum, row) => sum + toNumber(row.exposure, 0), 0) / returnRows.length : null,
     benchmarkWeightsLabel: `${leftLabel} ${Math.round(leftWeight * 100)}% / ${rightLabel} ${Math.round(rightWeight * 100)}%`,
     benchmarkMethod: benchmarkWeights.method || '-',
@@ -123,7 +306,7 @@ function compoundReturnPct(finalCapital, initialCapital) {
 function calibrationWarning(project) {
   const decision = latestDecision(project);
   const calibration = decision?.calibration || {};
-  const reportRows = Array.isArray(project.performance?.report_json?.return_rows) ? project.performance.report_json.return_rows : [];
+  const reportRows = Array.isArray(project.performance?.report_json?.rows) ? project.performance.report_json.rows : [];
   const uniqueScores = new Set(
     reportRows
       .map((row) => row?.predicted_score)
@@ -131,6 +314,7 @@ function calibrationWarning(project) {
   ).size;
   const sampleCount = toNumber(calibration.sample_count ?? reportRows.length, 0);
   const r2 = toNumber(calibration.model?.r2, 0);
+  const evaluation = evaluateVerdictRows(reportRows);
   const issues = [];
 
   if (sampleCount < 3) {
@@ -142,10 +326,55 @@ function calibrationWarning(project) {
   if (r2 < 0.05) {
     issues.push(`회귀 설명력이 낮습니다(R² ${r2.toFixed(2)}).`);
   }
+  if (evaluation.weightedAccuracy < 0.7) {
+    issues.push(`비용가중 적중률이 낮습니다(${rateText(evaluation.weightedAccuracy * 100, 1)}).`);
+  }
+  if (evaluation.strongMisses > 0) {
+    issues.push(`강한 오분류가 ${evaluation.strongMisses}회 있습니다.`);
+  }
 
   if (!issues.length) return null;
 
-  return `최근 보정값은 예측력보다 평균값에 가깝습니다. ${issues.join(' ')}`;
+  return `최근 보정값은 예측력보다 보수적 가드가 더 필요합니다. ${issues.join(' ')}`;
+}
+
+function buildAdaptiveGuard({ exactAccuracy, weightedAccuracy, strongMissRate, r2, currentGuard = {} }) {
+  const currentCap = toNumber(currentGuard.position_multiplier_cap, 1);
+  const currentMode = cleanText(currentGuard.max_trade_mode, '실전 후보');
+
+  if ((weightedAccuracy < 0.6 && r2 < 0.05) || strongMissRate >= 0.3) {
+    return {
+      state: '보류',
+      position_multiplier_cap: Math.min(currentCap, 0.5),
+      max_trade_mode: '보류',
+      note: '비용가중 적중률 또는 회귀 설명력이 너무 낮아 자동 보류합니다.',
+    };
+  }
+
+  if (weightedAccuracy < 0.75 || exactAccuracy < 0.35 || r2 < 0.1) {
+    return {
+      state: '관망',
+      position_multiplier_cap: Math.min(currentCap, 0.55),
+      max_trade_mode: '관망',
+      note: '약한 오분류가 많아 관망 수준으로 축소합니다.',
+    };
+  }
+
+  if (weightedAccuracy < 0.85 || exactAccuracy < 0.55) {
+    return {
+      state: '조건부',
+      position_multiplier_cap: Math.min(currentCap, 0.85),
+      max_trade_mode: '조건부',
+      note: '절대 정확도는 부족하지만 비용가중 성능이 버텨 조건부 대응합니다.',
+    };
+  }
+
+  return {
+    state: currentMode,
+    position_multiplier_cap: currentCap,
+    max_trade_mode: currentMode,
+    note: '현재 가드 기준을 유지합니다.',
+  };
 }
 
 function slugId(value) {
@@ -344,14 +573,29 @@ function buildReportLedger(project) {
 
 function reportKeyMetrics(project) {
   const latest = latestDecision(project) || {};
-  const engine = latest.engine || {};
-  const calibration = latest.calibration || {};
   const performance = performanceSummary(project) || {};
+  const recommended = performance.recommendedGuard || {};
   return [
-    { label: '최근 판정', value: verdictLabel(latest.dashboard?.verdict || latest.ai_signal?.verdict), caption: '가장 최근 decision' },
-    { label: '최근 비중', value: formatPercentInt(engine.position_size ?? latest.ai_signal?.position_size), caption: engine.trade_mode || '미정' },
-    { label: '보정 표본', value: cleanText(calibration.sample_count ?? performance.sampleCount ?? 0), caption: `신뢰도 ${cleanText(engine.confidence_score ?? '-')}` },
-    { label: '프로젝트 손익', value: performance.strategyReturn || '-', caption: performance.benchmarkReturn ? `벤치마크 ${performance.benchmarkReturn}` : '백테스트 요약' },
+    {
+      label: '최근 판정',
+      value: verdictLabel(latest.dashboard?.verdict || latest.ai_signal?.verdict),
+      caption: `보정 ${verdictLabel(performance.hysteresisVerdict || performance.tunedVerdict)}`,
+    },
+    {
+      label: '정확도',
+      value: performance.exactAccuracyText || '-',
+      caption: `비용가중 ${performance.weightedAccuracyText || '-'}`,
+    },
+    {
+      label: '오분류',
+      value: `${performance.mildMissRateText || '-'} / ${performance.strongMissRateText || '-'}`,
+      caption: `세부신호 ${performance.componentHitRateText || '-'}`,
+    },
+    {
+      label: '권장 가드',
+      value: recommended.max_trade_mode || '미정',
+      caption: `${recommended.note || '가드 정보 없음'} · cap x${toNumber(recommended.position_multiplier_cap, 1).toFixed(2)}`,
+    },
   ];
 }
 
@@ -410,6 +654,8 @@ function ReportExplorer({ marketProject, cryptoProject }) {
   const selectedRow = selectedIndex >= 0 ? ledgerRows[selectedIndex] : ledgerRows.at(-1) || null;
   const projectPerf = performanceSummary(activeProject) || {};
   const metrics = reportKeyMetrics(activeProject);
+  const projectGuard = projectPerf.recommendedGuard || {};
+  const tunedProjectVerdict = verdictLabel(projectPerf.hysteresisVerdict || projectPerf.tunedVerdict);
   const coreData = summarizeCoreData(selectedRow?.decision?.core_data || {}, activeProject.projectId);
   const previousRow = selectedIndex > 0 ? ledgerRows[selectedIndex - 1] : null;
   const levelRows = buildLevelRows(
@@ -624,6 +870,27 @@ function ReportExplorer({ marketProject, cryptoProject }) {
                   <ul>
                     {(brief.length ? brief : ['-']).map((item) => <li key={item}>{item}</li>)}
                   </ul>
+                </div>
+
+                <div className="analysis-block">
+                  <h5>보정 가드</h5>
+                  <div className="guard-grid">
+                    <div className="guard-card">
+                      <span>보정 판정</span>
+                      <strong>{tunedProjectVerdict}</strong>
+                      <small>최근 score와 hysteresis 반영</small>
+                    </div>
+                    <div className="guard-card">
+                      <span>권장 모드</span>
+                      <strong>{projectGuard.max_trade_mode || '미정'}</strong>
+                      <small>cap x{toNumber(projectGuard.position_multiplier_cap, 1).toFixed(2)}</small>
+                    </div>
+                    <div className="guard-card">
+                      <span>비용가중</span>
+                      <strong>{projectPerf.weightedAccuracyText || '-'}</strong>
+                      <small>Exact {projectPerf.exactAccuracyText || '-'}</small>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -924,6 +1191,8 @@ function ProjectCard({ project }) {
   const calibrationNote = calibrationWarning(project);
   const verdict = verdictLabel(decision?.dashboard?.verdict || decision?.ai_signal?.verdict);
   const tone = verdictTone(verdict);
+  const recommendedGuard = perf?.recommendedGuard || {};
+  const tunedVerdict = verdictLabel(perf?.hysteresisVerdict || perf?.tunedVerdict);
 
   return (
     <section className={`panel panel-${tone}`}>
@@ -939,11 +1208,10 @@ function ProjectCard({ project }) {
       </div>
 
       <div className="metric-grid">
-        <MetricCard label="권장 비중" value={formatPercentInt(decision?.engine?.position_size)} caption="현재 엔진 기준" tone={tone} />
-        <MetricCard label="실투입 손익" value={perf?.strategyReturn || pct(decision?.calibration?.expected_return_pct ?? 0, 2)} caption={perf?.benchmarkReturn ? `벤치마크 ${perf.benchmarkReturn}` : 'KRW 기준'} />
-        <MetricCard label="KRW 바스켓" value={perf?.benchmarkWeightsLabel || '-'} caption={perf?.benchmarkMethod || '역사 데이터 기준'} />
-        <MetricCard label="샘플" value={cleanText(decision?.calibration?.sample_count ?? 0)} caption="보정 표본 수" />
-        <MetricCard label="품질" value={`${cleanText(decision?.engine?.quality_score ?? '-')}/100`} caption="데이터 품질" />
+        <MetricCard label="최근 판정" value={verdict} caption={`보정 ${tunedVerdict}`} tone={tone} />
+        <MetricCard label="정확도" value={perf?.exactAccuracyText || '-'} caption={`비용가중 ${perf?.weightedAccuracyText || '-'}`} />
+        <MetricCard label="오분류" value={`${perf?.mildMissRateText || '-'} / ${perf?.strongMissRateText || '-'}`} caption={`세부신호 ${perf?.componentHitRateText || '-'}`} />
+        <MetricCard label="컷오프" value={perf?.thresholdText || '-'} caption={`${recommendedGuard.max_trade_mode || '미정'} · cap x${toNumber(recommendedGuard.position_multiplier_cap, 1).toFixed(2)}`} />
       </div>
 
       {calibrationNote ? (
@@ -980,8 +1248,26 @@ function ProjectCard({ project }) {
       ) : null}
 
       {perf ? (
+        <div className="mini-block">
+          <h3>비용 행렬</h3>
+          <div className="confusion-grid">
+            {VERDICT_ORDER.map((predicted) => (
+              <div key={predicted} className="confusion-card">
+                <span>{predicted}</span>
+                <strong>
+                  {VERDICT_ORDER.map((actual) => perf.confusion?.[predicted]?.[actual] ?? 0).join(' · ')}
+                </strong>
+                <small>중립 · 주의 · 위험 순</small>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {perf ? (
         <div className="perf-strip">
-          <span>{perf.accuracy}</span>
+          <span>Exact {perf.exactAccuracyText || '-'}</span>
+          <span>Weighted {perf.weightedAccuracyText || '-'}</span>
           <span>{perf.strategyReturn}</span>
           <span>{perf.benchmarkReturn}</span>
         </div>
@@ -1085,6 +1371,12 @@ function Simulator({ marketProject, cryptoProject }) {
   const cashExposure = totalExposure >= 1 ? 0 : 1 - totalExposure;
   const normalizedMarketWeight = totalExposure > 1 ? marketExposure / totalExposure : marketExposure;
   const normalizedCryptoWeight = totalExposure > 1 ? cryptoExposure / totalExposure : cryptoExposure;
+  const effectiveMarketExposure = selectedAssets.market ? marketExposure : 0;
+  const effectiveCryptoExposure = selectedAssets.crypto ? cryptoExposure : 0;
+  const effectiveTotalExposure = effectiveMarketExposure + effectiveCryptoExposure;
+  const effectiveCashExposure = effectiveTotalExposure >= 1 ? 0 : 1 - effectiveTotalExposure;
+  const effectiveNormalizedMarketWeight = effectiveTotalExposure > 1 ? effectiveMarketExposure / effectiveTotalExposure : effectiveMarketExposure;
+  const effectiveNormalizedCryptoWeight = effectiveTotalExposure > 1 ? effectiveCryptoExposure / effectiveTotalExposure : effectiveCryptoExposure;
   const activeRows = getPeriodRows(combinedReturnRows, scenarioDays);
   const marketRowsInPeriod = getPeriodRows(marketReturnRows, scenarioDays);
   const cryptoRowsInPeriod = getPeriodRows(cryptoReturnRows, scenarioDays);
@@ -1092,13 +1384,13 @@ function Simulator({ marketProject, cryptoProject }) {
     day: row.day,
     market: row.market,
     crypto: null,
-  })), capital, marketExposure, 0);
+  })), capital, effectiveMarketExposure, 0);
   const cryptoTimeline = buildPnlTimeline(activeRows.map((row) => ({
     day: row.day,
     market: null,
     crypto: row.crypto,
-  })), capital, 0, cryptoExposure);
-  const portfolioTimeline = buildPnlTimeline(activeRows, capital, normalizedMarketWeight, normalizedCryptoWeight);
+  })), capital, 0, effectiveCryptoExposure);
+  const portfolioTimeline = buildPnlTimeline(activeRows, capital, effectiveNormalizedMarketWeight, effectiveNormalizedCryptoWeight);
 
   const marketFinal = marketTimeline.at(-1)?.runningCapital ?? capital;
   const cryptoFinal = cryptoTimeline.at(-1)?.runningCapital ?? capital;
@@ -1119,7 +1411,7 @@ function Simulator({ marketProject, cryptoProject }) {
   const marketPath = marketTimeline.map((point) => point.runningCapital);
   const cryptoPath = cryptoTimeline.map((point) => point.runningCapital);
   const blendedPath = portfolioTimeline.map((point) => point.runningCapital);
-  const cashPath = activeRows.map(() => capital * cashExposure);
+  const cashPath = activeRows.map(() => capital * effectiveCashExposure);
 
   const marketPeriodRows = marketRowsInPeriod.map((row) => ({
     day: dayOnly(row.generated_at),
@@ -1133,7 +1425,7 @@ function Simulator({ marketProject, cryptoProject }) {
   }));
   const marketPeriodTimeline = buildPnlTimeline(marketPeriodRows, capital, marketExposure, 0);
   const cryptoPeriodTimeline = buildPnlTimeline(cryptoPeriodRows, capital, 0, cryptoExposure);
-  const blendedPeriodTimeline = buildPnlTimeline(activeRows, capital, normalizedMarketWeight, normalizedCryptoWeight);
+  const blendedPeriodTimeline = buildPnlTimeline(activeRows, capital, effectiveNormalizedMarketWeight, effectiveNormalizedCryptoWeight);
 
   return (
     <section className="panel simulator">
@@ -1241,7 +1533,7 @@ function Simulator({ marketProject, cryptoProject }) {
           <span>Portfolio</span>
           <strong className={blendedResult.tone === 'danger' ? 'down' : 'up'}>{blendedResult.label} {blendedResult.amount}</strong>
           <small>{pct(portfolioPeriodReturnPct, 2)} · 최종 {compactCurrency(portfolioFinal)}</small>
-          <small>기준: 시장 {Math.round(normalizedMarketWeight * 100)}% + 크립토 {Math.round(normalizedCryptoWeight * 100)}% + 현금 {Math.round(cashExposure * 100)}%</small>
+          <small>기준: 시장 {Math.round(effectiveNormalizedMarketWeight * 100)}% + 크립토 {Math.round(effectiveNormalizedCryptoWeight * 100)}% + 현금 {Math.round(effectiveCashExposure * 100)}%</small>
           <small>선택 기간의 일별 손익 합계</small>
           <small>마지막 샘플: {blendedDailyResult.label} {blendedDailyResult.amount}</small>
         </div>
@@ -1269,7 +1561,7 @@ function Simulator({ marketProject, cryptoProject }) {
         </div>
         <div>
           <span>Cash</span>
-          <strong>{Math.round(cashExposure * 100)}%</strong>
+          <strong>{Math.round(effectiveCashExposure * 100)}%</strong>
           <small>수익률 0%</small>
         </div>
       </div>
@@ -1432,15 +1724,17 @@ function BacktestSummary({ marketProject, cryptoProject }) {
       <div className="backtest-grid">
         <div className="backtest-card">
           <span>Market</span>
-          <strong>{market?.accuracy || '-'}</strong>
+          <strong>{market?.exactAccuracyText || '-'}</strong>
+          <small>비용가중 {market?.weightedAccuracyText || '-'}</small>
           <small>{market?.strategyReturn || '-'}</small>
-          <small>{market?.maxDrawdown || '-'}</small>
+          <small>최대낙폭 {market?.maxDrawdownText || '-'}</small>
         </div>
         <div className="backtest-card">
           <span>Crypto</span>
-          <strong>{crypto?.accuracy || '-'}</strong>
+          <strong>{crypto?.exactAccuracyText || '-'}</strong>
+          <small>비용가중 {crypto?.weightedAccuracyText || '-'}</small>
           <small>{crypto?.strategyReturn || '-'}</small>
-          <small>{crypto?.maxDrawdown || '-'}</small>
+          <small>최대낙폭 {crypto?.maxDrawdownText || '-'}</small>
         </div>
       </div>
       <div className="backtest-note">

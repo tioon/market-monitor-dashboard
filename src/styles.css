@@ -195,7 +195,7 @@ button {
 
 .report-summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 12px;
   margin-top: 16px;
 }
@@ -481,6 +481,49 @@ button {
   line-height: 1.7;
 }
 
+.confusion-grid,
+.guard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.confusion-card,
+.guard-card {
+  padding: 12px 13px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.confusion-card span,
+.guard-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.confusion-card strong,
+.guard-card strong {
+  display: block;
+  margin-top: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.confusion-card small,
+.guard-card small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+}
+
 .report-body-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
@@ -704,7 +747,7 @@ button {
 
 .calc-box {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   margin-top: 16px;
 }
@@ -845,7 +888,7 @@ button {
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
   margin-top: 16px;
 }
@@ -1239,6 +1282,10 @@ tbody tr:hover td {
   margin-top: 6px;
   color: var(--muted);
   font-family: 'IBM Plex Mono', monospace;
+}
+
+.backtest-card small + small {
+  margin-top: 4px;
 }
 
 .section-head {

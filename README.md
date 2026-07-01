@@ -8,6 +8,7 @@ Standalone dashboard for monitoring the market-agent and crypto-agent cloud data
 - Decision confidence, position sizing, and expected return
 - Recent timeline of reports and decisions
 - Backtest summary from the latest performance snapshots
+- Ordinal / cost-weighted verdict analysis with tuned thresholds and hysteresis
 - Capital simulator with blended return projection
 
 ## Local development
