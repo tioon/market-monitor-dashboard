@@ -220,6 +220,74 @@ function optimizeVerdictThresholds(rows) {
   return best;
 }
 
+function evaluateVerdictRows(rows) {
+  const normalizedRows = Array.isArray(rows) ? rows : [];
+  if (!normalizedRows.length) {
+    return {
+      count: 0,
+      exactHits: 0,
+      exactAccuracy: 0,
+      weightedCost: 0,
+      weightedAccuracy: 0,
+      mildMisses: 0,
+      strongMisses: 0,
+      componentHitRate: 0,
+      confusion: {
+        '중립~우호': { '중립~우호': 0, 주의: 0, '위험 우위': 0 },
+        주의: { '중립~우호': 0, 주의: 0, '위험 우위': 0 },
+        '위험 우위': { '중립~우호': 0, 주의: 0, '위험 우위': 0 },
+      },
+      bestThresholds: null,
+    };
+  }
+
+  const bestThresholds = optimizeVerdictThresholds(normalizedRows);
+  const lowThreshold = bestThresholds?.low ?? 2;
+  const highThreshold = bestThresholds?.high ?? 4;
+  const confusion = {
+    '중립~우호': { '중립~우호': 0, 주의: 0, '위험 우위': 0 },
+    주의: { '중립~우호': 0, 주의: 0, '위험 우위': 0 },
+    '위험 우위': { '중립~우호': 0, 주의: 0, '위험 우위': 0 },
+  };
+
+  let exactHits = 0;
+  let weightedCost = 0;
+  let mildMisses = 0;
+  let strongMisses = 0;
+  let componentHitSum = 0;
+  let componentTotalSum = 0;
+
+  for (const row of normalizedRows) {
+    const predicted = scoreToVerdict(row?.predicted_score, lowThreshold, highThreshold);
+    const actual = normalizeVerdict(row?.actual_verdict);
+    if (actual) {
+      confusion[predicted][actual] += 1;
+    }
+
+    const distance = verdictDistance(predicted, actual);
+    if (distance === 0) exactHits += 1;
+    else if (distance === 1) mildMisses += 1;
+    else if (distance === 2) strongMisses += 1;
+
+    weightedCost += verdictCost(predicted, actual) ?? 0;
+    componentHitSum += toNumber(row?.component_hits, 0);
+    componentTotalSum += Math.max(toNumber(row?.component_total, 0), toNumber(row?.component_hits, 0));
+  }
+
+  return {
+    count: normalizedRows.length,
+    exactHits,
+    exactAccuracy: exactHits / normalizedRows.length,
+    weightedCost,
+    weightedAccuracy: 1 - weightedCost / (normalizedRows.length * 3),
+    mildMisses,
+    strongMisses,
+    componentHitRate: componentTotalSum > 0 ? componentHitSum / componentTotalSum : 0,
+    confusion,
+    bestThresholds,
+  };
+}
+
 function latestDecision(project) {
   return project.latestDecision?.decision_snapshot || null;
 }
