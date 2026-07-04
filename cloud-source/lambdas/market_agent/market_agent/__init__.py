@@ -1,0 +1,2 @@
+"""Daily market briefing agent."""
+
