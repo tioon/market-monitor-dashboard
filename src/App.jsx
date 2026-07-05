@@ -1,5 +1,21 @@
 import React from 'react';
 import snapshot from './data/snapshot.json';
+import {
+  VERDICT_ORDER,
+  applyVerdictHysteresis,
+  computeMaxDrawdownPct,
+  evaluateVerdictRowsWalkForward,
+  extractTrustGrade,
+  normalizeVerdict,
+  optimizeVerdictThresholds,
+  scoreToVerdict,
+  summarizeReturnRows,
+  trustBadge,
+  verdictCost,
+  verdictDistance,
+  verdictRank,
+  wilsonInterval,
+} from './lib/metrics.js';
 
 function dayOnly(value) {
   if (!value) return '-';
@@ -61,231 +77,14 @@ function formatPercentInt(value) {
   return text === '-' ? text : `${text}%`;
 }
 
-const VERDICT_ORDER = ['중립~우호', '주의', '위험 우위'];
-const VERDICT_RANK = Object.fromEntries(VERDICT_ORDER.map((label, index) => [label, index]));
-
-function normalizeVerdict(value) {
-  const text = cleanText(value, '');
-  if (!text) return null;
-  if (VERDICT_RANK[text] !== undefined) return text;
-  if (text.includes('위험')) return '위험 우위';
-  if (text.includes('주의') || text.includes('혼조')) return '주의';
-  if (text.includes('우호') || text.includes('중립')) return '중립~우호';
-  return null;
-}
-
-function verdictRank(value) {
-  const normalized = normalizeVerdict(value);
-  return normalized === null ? null : VERDICT_RANK[normalized];
-}
-
-function verdictDistance(predicted, actual) {
-  const predRank = verdictRank(predicted);
-  const actualRank = verdictRank(actual);
-  if (predRank === null || actualRank === null) return null;
-  return Math.abs(predRank - actualRank);
-}
-
-function verdictCost(predicted, actual) {
-  const distance = verdictDistance(predicted, actual);
-  if (distance === null) return null;
-  if (distance === 0) return 0;
-  if (distance === 1) return 1;
-  return 3;
-}
-
 function parseReportVerdict(reportText) {
   const match = String(reportText || '').match(/판단:\s*([^|\n]+)/);
   return match ? normalizeVerdict(match[1]) : null;
 }
 
-function scoreToVerdict(score, lowThreshold, highThreshold) {
-  const value = toNumber(score, 0);
-  if (value >= highThreshold) return '위험 우위';
-  if (value >= lowThreshold) return '주의';
-  return '중립~우호';
-}
-
-function summarizeReturnRows(rows) {
-  const normalized = Array.isArray(rows) ? rows : [];
-  return normalized.reduce(
-    (acc, row) => {
-      acc.strategy += toNumber(row?.strategy_return_pct, 0);
-      acc.benchmark += toNumber(
-        row?.benchmark_return_pct ??
-          row?.spy_return_pct ??
-          row?.kospi_return_pct ??
-          row?.asset_return_pct,
-        0
-      );
-      acc.exposure += toNumber(row?.exposure, 0);
-      acc.count += 1;
-      return acc;
-    },
-    { strategy: 0, benchmark: 0, exposure: 0, count: 0 }
-  );
-}
-
-function computeMaxDrawdownPct(rows, key = 'strategy_return_pct') {
-  const normalized = Array.isArray(rows) ? rows : [];
-  let capital = 1;
-  let peak = 1;
-  let maxDrawdown = 0;
-
-  for (const row of normalized) {
-    capital *= 1 + toNumber(row?.[key], 0) / 100;
-    peak = Math.max(peak, capital);
-    const drawdown = ((capital / peak) - 1) * 100;
-    maxDrawdown = Math.min(maxDrawdown, drawdown);
-  }
-
-  return maxDrawdown;
-}
-
-function applyVerdictHysteresis(rows, lowThreshold, highThreshold, margin = 0.4) {
-  const ordered = [...rows].sort((a, b) => String(a.generated_at).localeCompare(String(b.generated_at)));
-  const recent = ordered.slice(-2);
-  if (!recent.length) return null;
-
-  const latest = scoreToVerdict(recent.at(-1)?.predicted_score, lowThreshold, highThreshold);
-  if (recent.length === 1) return latest;
-
-  const previous = scoreToVerdict(recent.at(-2)?.predicted_score, lowThreshold, highThreshold);
-  if (latest === previous) return latest;
-
-  const latestScore = toNumber(recent.at(-1)?.predicted_score, 0);
-  const distanceToLow = Math.abs(latestScore - lowThreshold);
-  const distanceToHigh = Math.abs(latestScore - highThreshold);
-  if (Math.min(distanceToLow, distanceToHigh) <= margin) {
-    return previous;
-  }
-
-  return latest;
-}
-
-function optimizeVerdictThresholds(rows) {
-  const scores = [...new Set((Array.isArray(rows) ? rows : []).map((row) => toNumber(row?.predicted_score, NaN)).filter(Number.isFinite))].sort((a, b) => a - b);
-  if (!scores.length) return null;
-
-  const candidates = new Set([scores[0] - 1, scores.at(-1) + 1]);
-  for (let index = 0; index < scores.length - 1; index += 1) {
-    candidates.add((scores[index] + scores[index + 1]) / 2);
-  }
-
-  const candidateList = [...candidates].sort((a, b) => a - b);
-  let best = null;
-
-  for (const low of candidateList) {
-    for (const high of candidateList) {
-      if (!(low < high)) continue;
-
-      let exactHits = 0;
-      let weightedCost = 0;
-      let mildMisses = 0;
-      let strongMisses = 0;
-
-      for (const row of rows) {
-        const predicted = scoreToVerdict(row?.predicted_score, low, high);
-        const actual = normalizeVerdict(row?.actual_verdict);
-        const distance = verdictDistance(predicted, actual);
-        if (distance === 0) exactHits += 1;
-        else if (distance === 1) mildMisses += 1;
-        else if (distance === 2) strongMisses += 1;
-        weightedCost += verdictCost(predicted, actual) ?? 0;
-      }
-
-      const candidate = {
-        low,
-        high,
-        exactHits,
-        exactAccuracy: exactHits / rows.length,
-        weightedAccuracy: 1 - weightedCost / (rows.length * 3),
-        mildMisses,
-        strongMisses,
-        weightedCost,
-      };
-
-      if (
-        !best ||
-        candidate.weightedCost < best.weightedCost ||
-        (candidate.weightedCost === best.weightedCost && candidate.exactHits > best.exactHits) ||
-        (candidate.weightedCost === best.weightedCost && candidate.exactHits === best.exactHits && candidate.strongMisses < best.strongMisses) ||
-        (candidate.weightedCost === best.weightedCost && candidate.exactHits === best.exactHits && candidate.strongMisses === best.strongMisses && candidate.low > best.low)
-      ) {
-        best = candidate;
-      }
-    }
-  }
-
-  return best;
-}
-
+// REQ-B1: 정확도 평가는 walk-forward(OOS) 방식만 사용 (인샘플 최적화 표시 금지)
 function evaluateVerdictRows(rows) {
-  const normalizedRows = Array.isArray(rows) ? rows : [];
-  if (!normalizedRows.length) {
-    return {
-      count: 0,
-      exactHits: 0,
-      exactAccuracy: 0,
-      weightedCost: 0,
-      weightedAccuracy: 0,
-      mildMisses: 0,
-      strongMisses: 0,
-      componentHitRate: 0,
-      confusion: {
-        '중립~우호': { '중립~우호': 0, 주의: 0, '위험 우위': 0 },
-        주의: { '중립~우호': 0, 주의: 0, '위험 우위': 0 },
-        '위험 우위': { '중립~우호': 0, 주의: 0, '위험 우위': 0 },
-      },
-      bestThresholds: null,
-    };
-  }
-
-  const bestThresholds = optimizeVerdictThresholds(normalizedRows);
-  const lowThreshold = bestThresholds?.low ?? 2;
-  const highThreshold = bestThresholds?.high ?? 4;
-  const confusion = {
-    '중립~우호': { '중립~우호': 0, 주의: 0, '위험 우위': 0 },
-    주의: { '중립~우호': 0, 주의: 0, '위험 우위': 0 },
-    '위험 우위': { '중립~우호': 0, 주의: 0, '위험 우위': 0 },
-  };
-
-  let exactHits = 0;
-  let weightedCost = 0;
-  let mildMisses = 0;
-  let strongMisses = 0;
-  let componentHitSum = 0;
-  let componentTotalSum = 0;
-
-  for (const row of normalizedRows) {
-    const predicted = scoreToVerdict(row?.predicted_score, lowThreshold, highThreshold);
-    const actual = normalizeVerdict(row?.actual_verdict);
-    if (actual) {
-      confusion[predicted][actual] += 1;
-    }
-
-    const distance = verdictDistance(predicted, actual);
-    if (distance === 0) exactHits += 1;
-    else if (distance === 1) mildMisses += 1;
-    else if (distance === 2) strongMisses += 1;
-
-    weightedCost += verdictCost(predicted, actual) ?? 0;
-    componentHitSum += toNumber(row?.component_hits, 0);
-    componentTotalSum += Math.max(toNumber(row?.component_total, 0), toNumber(row?.component_hits, 0));
-  }
-
-  return {
-    count: normalizedRows.length,
-    exactHits,
-    exactAccuracy: exactHits / normalizedRows.length,
-    weightedCost,
-    weightedAccuracy: 1 - weightedCost / (normalizedRows.length * 3),
-    mildMisses,
-    strongMisses,
-    componentHitRate: componentTotalSum > 0 ? componentHitSum / componentTotalSum : 0,
-    confusion,
-    bestThresholds,
-  };
+  return evaluateVerdictRowsWalkForward(rows);
 }
 
 function latestDecision(project) {
@@ -336,10 +135,21 @@ function performanceSummary(project) {
   const strategyReturn = returns.count ? pct(returns.strategy, 2) : '-';
   const benchmarkReturn = returns.count ? pct(returns.benchmark, 2) : '-';
   const maxDrawdown = returnRows.length ? computeMaxDrawdownPct(returnRows, 'strategy_return_pct') : 0;
+  // REQ-C1: 신뢰 등급은 백엔드 산출값을 표시만 한다
+  const trustGrade = extractTrustGrade(latestDecisionData, project.performance?.report_json);
+  const trust = trustBadge(trustGrade);
 
   return {
+    trustGrade,
+    trust,
     exactAccuracy: evaluation.exactAccuracy,
     exactAccuracyText: rateText(evaluation.exactAccuracy * 100, 1),
+    // REQ-B2: 표본 수 + Wilson 95% CI
+    accuracyCiText: evaluation.count
+      ? `n=${evaluation.count} · CI ${rateText(evaluation.accuracyCiLow * 100, 0)}~${rateText(evaluation.accuracyCiHigh * 100, 0)}`
+      : 'n=0',
+    lowSample: evaluation.count < 30,
+    evaluationMethod: evaluation.method,
     weightedAccuracy: evaluation.weightedAccuracy,
     weightedAccuracyText: rateText(evaluation.weightedAccuracy * 100, 1),
     mildMissRate: evaluation.count ? evaluation.mildMisses / evaluation.count : 0,
@@ -647,12 +457,12 @@ function reportKeyMetrics(project) {
     {
       label: '최근 판정',
       value: verdictLabel(latest.dashboard?.verdict || latest.ai_signal?.verdict),
-      caption: `보정 ${verdictLabel(performance.hysteresisVerdict || performance.tunedVerdict)}`,
+      caption: `실험적 보정(참고용) ${verdictLabel(performance.hysteresisVerdict || performance.tunedVerdict)}`,
     },
     {
-      label: '정확도',
+      label: '정확도 (OOS)',
       value: performance.exactAccuracyText || '-',
-      caption: `비용가중 ${performance.weightedAccuracyText || '-'}`,
+      caption: `비용가중 ${performance.weightedAccuracyText || '-'} · ${performance.accuracyCiText || ''}`,
     },
     {
       label: '오분류',
@@ -1275,9 +1085,19 @@ function ProjectCard({ project }) {
         <div className={`pill pill-${tone}`}>{formatPercentInt(decision?.engine?.position_size ?? decision?.ai_signal?.position_size)}</div>
       </div>
 
+      {/* REQ-C1: 신뢰 등급 배지 — 기준 미충족 시 '실전 참고 불가'를 항상 노출 */}
+      <div className={`mini-block trust-badge trust-${perf?.trust?.usable ? 'ok' : 'blocked'}`}>
+        <h3>신뢰 등급: {perf?.trust?.grade || '검증 중'}</h3>
+        <p className="note">{perf?.trust?.detail || '등급 정보 없음 — 실전 참고 불가'}</p>
+      </div>
+
       <div className="metric-grid">
-        <MetricCard label="최근 판정" value={verdict} caption={`보정 ${tunedVerdict}`} tone={tone} />
-        <MetricCard label="정확도" value={perf?.exactAccuracyText || '-'} caption={`비용가중 ${perf?.weightedAccuracyText || '-'}`} />
+        <MetricCard label="최근 판정" value={verdict} caption={`실험적 보정(참고용) ${tunedVerdict}`} tone={tone} />
+        <MetricCard
+          label="정확도 (OOS)"
+          value={perf?.exactAccuracyText || '-'}
+          caption={`${perf?.accuracyCiText || ''}${perf?.lowSample ? ' · 표본<30 통계적 참고 불가' : ''}`}
+        />
         <MetricCard label="오분류" value={`${perf?.mildMissRateText || '-'} / ${perf?.strongMissRateText || '-'}`} caption={`세부신호 ${perf?.componentHitRateText || '-'}`} />
         <MetricCard label="컷오프" value={perf?.thresholdText || '-'} caption={`${recommendedGuard.max_trade_mode || '미정'} · cap x${toNumber(recommendedGuard.position_multiplier_cap, 1).toFixed(2)}`} />
       </div>
@@ -1502,6 +1322,16 @@ function Simulator({ marketProject, cryptoProject }) {
           <div className="eyebrow">Capital simulator</div>
           <h3>실투입 예상 수익률</h3>
           <p className="subtle">실제 사후검증 수익률을 날짜별로 누적해서, 리포트대로 투자했을 때의 순손익을 보여줍니다.</p>
+          {/* REQ-E3: 시뮬레이터 한계 고지 */}
+          <p className="note">
+            ⚠ 과거 백테스트 손익의 단순합입니다. 세금·환전 수수료·실측 슬리피지는 미반영이며, 미래 수익을 예측하지 않습니다.
+            사용 가능한 실데이터: {combinedReturnRows.length}일치.
+          </p>
+          {scenarioDays > combinedReturnRows.length ? (
+            <p className="note">
+              ⚠ 설정한 기간({scenarioDays}일)보다 데이터가 적어 실제로는 최근 {activeRows.length}일치만 사용됩니다.
+            </p>
+          ) : null}
         </div>
         <span className="subtle">기준 자산: Market = {marketBasketLabel}, Crypto = {cryptoBasketLabel}</span>
       </div>

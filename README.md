@@ -26,7 +26,7 @@ The app snapshots the latest DynamoDB and S3 data into `src/data/snapshot.json`.
 npm run sync:data
 ```
 
-AWS access is required for data refresh; the build does not fall back to a local snapshot.
+AWS access is used when available to refresh data; if it is missing, the build falls back to the committed local snapshot.
 
 ## Build
 

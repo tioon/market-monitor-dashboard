@@ -1375,3 +1375,28 @@ tbody tr:hover td {
     justify-content: start;
   }
 }
+
+/* REQ-C1: 신뢰 등급 배지 */
+.trust-badge {
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+}
+
+.trust-blocked {
+  background: rgba(244, 96, 96, 0.08);
+  border-color: rgba(244, 96, 96, 0.45);
+}
+
+.trust-blocked h3 {
+  color: #f47272;
+}
+
+.trust-ok {
+  background: rgba(94, 210, 148, 0.08);
+  border-color: rgba(94, 210, 148, 0.45);
+}
+
+.trust-ok h3 {
+  color: #6fdc9f;
+}

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -28,11 +28,36 @@ const projects = [
   },
 ];
 
+function emptyProjectSnapshot(projectId) {
+  return {
+    projectId,
+    reportCount: 0,
+    decisionCount: 0,
+    latestReport: null,
+    latestDecision: null,
+    reports: [],
+    decisions: [],
+    performance: {
+      report_text: null,
+      report_json: null,
+    },
+    performance_history: [],
+    performanceObjectKey: null,
+    performanceMarkdownKey: null,
+  };
+}
+
 function run(cmd, args) {
   return execFileSync(cmd, args, {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
     maxBuffer: 20 * 1024 * 1024,
+    timeout: 30000,
+    env: {
+      ...process.env,
+      AWS_EC2_METADATA_DISABLED: 'true',
+      AWS_PAGER: '',
+    },
   });
 }
 
@@ -73,6 +98,9 @@ function compactDecisionSnapshot(snapshot) {
     dashboard: snapshot.dashboard || null,
     engine: snapshot.engine || null,
     calibration: snapshot.calibration || null,
+    // REQ-C1: 백엔드 산출 신뢰 등급을 대시보드까지 전달
+    trust_grade: snapshot.trust_grade || null,
+    ai_status: snapshot.ai_status || null,
     core_data: snapshot.core_data || null,
     core_evidence: snapshot.core_evidence || [],
     buffers: snapshot.buffers || [],
@@ -217,7 +245,29 @@ function syncSnapshot() {
     writeFileSync(snapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
     process.stdout.write(`Wrote ${snapshotPath}\n`);
   } catch (error) {
-    throw error;
+    const fallback = (() => {
+      try {
+        const existing = JSON.parse(readFileSync(snapshotPath, 'utf8'));
+        return {
+          ...existing,
+          generatedAt: existing.generatedAt || new Date().toISOString(),
+          region: existing.region || region,
+          source: 'local-snapshot',
+          refreshWarning: String(error?.message || error),
+        };
+      } catch {
+        return {
+          generatedAt: new Date().toISOString(),
+          region,
+          source: 'local-snapshot',
+          refreshWarning: String(error?.message || error),
+          projects: projects.map((project) => emptyProjectSnapshot(project.projectId)),
+        };
+      }
+    })();
+
+    writeFileSync(snapshotPath, `${JSON.stringify(fallback, null, 2)}\n`, 'utf8');
+    process.stdout.write(`Wrote ${snapshotPath} from local snapshot fallback\n`);
   }
 }
 
