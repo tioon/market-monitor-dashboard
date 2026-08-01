@@ -1,151 +1,150 @@
 {
-  "generatedAt": "2026-07-31T00:06:49.575Z",
+  "generatedAt": "2026-08-01T00:04:50.561Z",
   "region": "ap-northeast-2",
   "source": "aws",
   "projects": [
     {
       "projectId": "market-agent",
-      "reportCount": 37,
-      "decisionCount": 37,
+      "reportCount": 38,
+      "decisionCount": 38,
       "latestReport": {
         "record_type": "report",
-        "record_key": "REPORT#2026-07-31T07:00:24+09:00",
-        "generated_at": "2026-07-31T07:00:24+09:00",
-        "report_text": "[2026-07-31 글로벌 시장 브리핑]\n신뢰 등급: 검증 중 (표본 28) — 실전 참고 불가 (표본 부족 (28/60); OOS 방향 적중률 하한 30.0% ≤ 50%)\n\n판단: 주의 | 데이터 품질: 100/100 | 신뢰도: 77/100 | Risk 4\n시장 국면: 주의/혼조 | 데이터 신선도: 100/100\n백테스트 상태: 주의 | 표본 28 | 비중 상한 x0.85\n쉽게 말해, 반등은 가능하지만 아직 안심하고 따라붙기엔 확인할 게 남아 있습니다.\n\n[핵심 데이터]\n- 시장 폭: SPY 1개월 -0.68%, RSP 1개월 +1.23%, IWM 1개월 -2.62%, HYG 1개월 -0.63%\n- 변동성/달러: VIX 17.1, US 10Y 4.66%, 달러지수 100.0\n- 한국/환율: KOSPI 5,593.56, KOSDAQ 644.78, USD/KRW 1,422.34\n- 밸류/스프레드: CAPE 40.6, S&P PE 28.6, Earnings Yield 3.49%, HY spread n/a%\n\n[핵심 결론]\n- 오늘 결론: 주의 (Risk 4, 신뢰도 77, 실행 모드 조건부, 권장 비중 42%)\n- 한줄 판단: 확인 후 소액 분할만 검토하는 쪽이 낫습니다.\n- 진입 조건: SPY와 동일가중, 소형주, 하이일드가 동시에 버티는지 확인한 뒤 분할 검토\n- 무효화 조건: VIX 재상승이나 달러/금리 동반 강세가 나오면 분할을 중단\n- 리스크 한도: 일일 손실 -1.0% / 최대 비중 42% / 레버리지 금지\n\n[핵심 근거]\n- 미국 10년물 4.66%: 밸류에이션 할인율 부담 → 금리가 높으면 성장주/기술주 가격이 눌리기 쉽습니다.\n- 주식 이익수익률 3.49%가 10년물 4.66%보다 낮아 위험보상 매력이 약함 → 주식이 채권보다 압도적으로 매력적이라고 보기 어렵습니다.\n- Shiller CAPE 40.6: 장기 밸류에이션 부담이 높은 구간 → 장기 기준으로 미국 주식 가격 부담이 큽니다.\n\n[완충 근거]\n- RSP 1개월이 SPY보다 1.91%p 강해 시장 폭이 개선\n- 1개월 기준 하이일드가 투자등급보다 강해 크레딧 선호는 유지\n\n[AI 보조 판단]\n- AI 신호 미반영: OpenAI 요청 제한(rate limit)\n\n[리스크 체크]\n- 지금은 새로 크게 사기보다, 이미 가진 포지션의 비중과 손실 가능성을 먼저 점검하는 구간입니다.\n- 반등을 믿으려면 대형주뿐 아니라 소형주, 하이일드 채권, 반도체가 같이 살아나야 합니다.\n- VIX가 25를 넘거나 금리/달러가 같이 오르면 현금 비중을 높이는 쪽이 유리합니다.\n\n주의: 투자 조언이 아닌 데이터 기반 참고 브리핑입니다."
+        "record_key": "REPORT#2026-08-01T07:00:24+09:00",
+        "generated_at": "2026-08-01T07:00:24+09:00",
+        "report_text": "[2026-08-01 글로벌 시장 브리핑]\n신뢰 등급: 검증 중 (표본 29) — 실전 참고 불가 (표본 부족 (29/60); OOS 방향 적중률 하한 32.1% ≤ 50%)\n\n판단: 주의 | 데이터 품질: 100/100 | 신뢰도: 77/100 | Risk 5\n시장 국면: 방어 우위 | 데이터 신선도: 100/100\n백테스트 상태: 주의 | 표본 29 | 비중 상한 x0.85\n쉽게 말해, 반등은 가능하지만 아직 안심하고 따라붙기엔 확인할 게 남아 있습니다.\n\n[핵심 데이터]\n- 시장 폭: SPY 1개월 +0.17%, RSP 1개월 +0.75%, IWM 1개월 -2.71%, HYG 1개월 -0.14%\n- 변동성/달러: VIX 16.0, US 10Y 4.75%, 달러지수 99.8\n- 한국/환율: KOSPI 6,595.45, KOSDAQ 719.76, USD/KRW 1,442.07\n- 밸류/스프레드: CAPE 40.9, S&P PE 28.8, Earnings Yield 3.47%, HY spread n/a%\n\n[핵심 결론]\n- 오늘 결론: 주의 (Risk 5, 신뢰도 77, 실행 모드 조건부, 권장 비중 42%)\n- 한줄 판단: 확인 후 소액 분할만 검토하는 쪽이 낫습니다.\n- 진입 조건: SPY와 동일가중, 소형주, 하이일드가 동시에 버티는지 확인한 뒤 분할 검토\n- 무효화 조건: VIX 재상승이나 달러/금리 동반 강세가 나오면 분할을 중단\n- 리스크 한도: 일일 손실 -1.0% / 최대 비중 42% / 레버리지 금지\n\n[핵심 근거]\n- 미국 10년물 4.75%: 밸류에이션 할인율 부담 → 금리가 높으면 성장주/기술주 가격이 눌리기 쉽습니다.\n- 주식 이익수익률 3.47%가 10년물 4.75%보다 낮아 위험보상 매력이 약함 → 주식이 채권보다 압도적으로 매력적이라고 보기 어렵습니다.\n- Shiller CAPE 40.9: 장기 밸류에이션 부담이 높은 구간 → 장기 기준으로 미국 주식 가격 부담이 큽니다.\n\n[완충 근거]\n- SPY +1.10%: 지수 모멘텀은 우호적 → 미국 대표 ETF가 크게 밀려서 단기 분위기는 약합니다.\n- 1개월 기준 하이일드가 투자등급보다 강해 크레딧 선호는 유지\n\n[AI 보조 판단]\n- AI 신호 미반영: OpenAI 요청 제한(rate limit)\n\n[리스크 체크]\n- 지금은 새로 크게 사기보다, 이미 가진 포지션의 비중과 손실 가능성을 먼저 점검하는 구간입니다.\n- 반등을 믿으려면 대형주뿐 아니라 소형주, 하이일드 채권, 반도체가 같이 살아나야 합니다.\n- VIX가 25를 넘거나 금리/달러가 같이 오르면 현금 비중을 높이는 쪽이 유리합니다.\n\n주의: 투자 조언이 아닌 데이터 기반 참고 브리핑입니다."
       },
       "latestDecision": {
         "record_type": "decision",
-        "record_key": "DECISION#2026-07-31T07:00:24+09:00",
-        "generated_at": "2026-07-31T07:00:24+09:00",
+        "record_key": "DECISION#2026-08-01T07:00:24+09:00",
+        "generated_at": "2026-08-01T07:00:24+09:00",
         "decision_snapshot": {
           "dashboard": {
             "positives": [
-              "RSP 1개월이 SPY보다 1.91%p 강해 시장 폭이 개선",
-              "1개월 기준 하이일드가 투자등급보다 강해 크레딧 선호는 유지",
-              "동일가중이 시총가중보다 1.16%p 강해 시장 폭이 개선"
+              "SPY +1.10%: 지수 모멘텀은 우호적",
+              "1개월 기준 하이일드가 투자등급보다 강해 크레딧 선호는 유지"
             ],
-            "score": 4,
+            "score": 5,
             "negatives": [
               "소형주 1개월 추세가 대형주보다 약해 위험선호 확장이 약함",
-              "장기채와 주식이 같이 약해져 위험자산 회복력이 떨어짐",
-              "미국 10년물 4.66%: 밸류에이션 할인율 부담",
+              "소형주가 대형주보다 뚜렷하게 약해 위험선호가 약함",
+              "미국 10년물 4.75%: 밸류에이션 할인율 부담",
               "장기채 약세와 높은 금리가 동시에 나타나 성장주 할인율 부담",
-              "Shiller CAPE 40.6: 장기 밸류에이션 부담이 높은 구간",
-              "주식 이익수익률 3.49%가 10년물 4.66%보다 낮아 위험보상 매력이 약함"
+              "Shiller CAPE 40.9: 장기 밸류에이션 부담이 높은 구간",
+              "주식 이익수익률 3.47%가 10년물 4.75%보다 낮아 위험보상 매력이 약함"
             ],
             "verdict": "주의"
           },
           "engine": {
-            "leverage_allowed": false,
-            "quality_score": 100,
-            "trade_mode": "조건부",
             "confidence_score": 77,
-            "calibration_state": "주의",
-            "entry_condition": "SPY와 동일가중, 소형주, 하이일드가 동시에 버티는지 확인한 뒤 분할 검토",
-            "invalidation": "VIX 재상승이나 달러/금리 동반 강세가 나오면 분할을 중단",
+            "leverage_allowed": false,
             "position_size": 42,
-            "daily_loss_limit_pct": 1,
-            "calibration_sample_count": 28,
+            "critical_missing": [],
+            "trade_mode": "조건부",
+            "invalidation": "VIX 재상승이나 달러/금리 동반 강세가 나오면 분할을 중단",
+            "calibration_sample_count": 29,
             "calibration_position_cap": 0.85,
-            "critical_missing": []
+            "daily_loss_limit_pct": 1,
+            "entry_condition": "SPY와 동일가중, 소형주, 하이일드가 동시에 버티는지 확인한 뒤 분할 검토",
+            "calibration_state": "주의",
+            "quality_score": 100
           },
           "calibration": {
-            "sample_count": 28,
-            "expected_return_pct": -0.7240503312737637,
-            "recommended_position_multiplier": 1,
-            "decision_settings_coverage": 1,
-            "walk_forward_oos_r2": -0.11020380412661024,
-            "calibration_lock_reason": "표본 부족 (28/30)",
-            "trust_grade": {
-              "unmet_conditions": [
-                "표본 부족 (28/60)",
-                "OOS 방향 적중률 하한 30.0% ≤ 50%",
-                "전략 수익률 CI 하한 -0.72% ≤ 0 (항상현금 대비 우위 미확인)"
-              ],
-              "sample_count": 28,
-              "usable_for_trading": false,
-              "strategy_return_ci_lower_pct": -0.723720720370409,
-              "strategy_mean_return_pct": -0.30476906189630143,
-              "strategy_max_drawdown_pct": -10.593516052457142,
-              "benchmark_max_drawdown_pct": -19.332475134484927,
-              "core_version": "2.0",
-              "degraded": false,
-              "recent_hit_rate": 0.48,
-              "oos_hit_rate": 0.48,
-              "oos_hit_lower_bound": 0.30031003928960015,
-              "oos_hit_sample_count": 25,
-              "grade": "검증 중"
-            },
-            "raw_sample_count": 28,
-            "walk_forward_mae": 2.044055718392285,
-            "benchmark_return_pct": -4.094640728360132,
+            "sample_count": 29,
             "model": {
+              "intercept": -0.717182497626088,
               "slope": 0,
-              "intercept": -0.7240503312737637,
               "r2": 0
             },
-            "avg_abs_return_pct": 0.8118026319298781,
-            "walk_forward_direction_hit_rate": 0.48,
+            "walk_forward_direction_hit_rate": 0.5,
+            "calibration_locked": true,
+            "expected_return_pct": -0.717182497626088,
+            "benchmark_return_pct": -0.5248831554911682,
+            "calibration_lock_reason": "표본 부족 (29/30)",
+            "decision_settings_coverage": 1,
+            "recommended_position_multiplier": 1,
+            "trust_grade": {
+              "usable_for_trading": false,
+              "strategy_mean_return_pct": -0.29643219769298074,
+              "unmet_conditions": [
+                "표본 부족 (29/60)",
+                "OOS 방향 적중률 하한 32.1% ≤ 50%",
+                "전략 수익률 CI 하한 -0.70% ≤ 0 (항상현금 대비 우위 미확인)"
+              ],
+              "grade": "검증 중",
+              "strategy_return_ci_lower_pct": -0.7010093034552067,
+              "benchmark_max_drawdown_pct": -19.755885384455674,
+              "recent_hit_rate": 0.5,
+              "oos_hit_rate": 0.5,
+              "strategy_max_drawdown_pct": -10.64984213734409,
+              "degraded": false,
+              "core_version": "2.0",
+              "oos_hit_lower_bound": 0.3206030631500208,
+              "oos_hit_sample_count": 26,
+              "sample_count": 29
+            },
+            "walk_forward_mae": 1.9730984667534508,
+            "walk_forward_oos_r2": -0.11035237716361768,
             "benchmark_weights": {
-              "right_weight": 0.5,
               "left_weight": 0.5,
+              "right_weight": 0.5,
               "method": "균등 비중"
             },
-            "calibration_locked": true
+            "avg_abs_return_pct": 0.7859818515185031,
+            "raw_sample_count": 29
           },
           "trust_grade": {
-            "strategy_mean_return_pct": -0.30476906189630143,
-            "strategy_return_ci_lower_pct": -0.723720720370409,
+            "oos_hit_lower_bound": 0.3206030631500208,
+            "sample_count": 29,
+            "oos_hit_sample_count": 26,
+            "strategy_return_ci_lower_pct": -0.7010093034552067,
+            "strategy_max_drawdown_pct": -10.64984213734409,
+            "oos_hit_rate": 0.5,
             "usable_for_trading": false,
-            "oos_hit_sample_count": 25,
-            "unmet_conditions": [
-              "표본 부족 (28/60)",
-              "OOS 방향 적중률 하한 30.0% ≤ 50%",
-              "전략 수익률 CI 하한 -0.72% ≤ 0 (항상현금 대비 우위 미확인)"
-            ],
-            "strategy_max_drawdown_pct": -10.593516052457142,
-            "benchmark_max_drawdown_pct": -19.332475134484927,
-            "core_version": "2.0",
-            "sample_count": 28,
-            "oos_hit_rate": 0.48,
-            "recent_hit_rate": 0.48,
             "grade": "검증 중",
+            "strategy_mean_return_pct": -0.29643219769298074,
+            "recent_hit_rate": 0.5,
+            "unmet_conditions": [
+              "표본 부족 (29/60)",
+              "OOS 방향 적중률 하한 32.1% ≤ 50%",
+              "전략 수익률 CI 하한 -0.70% ≤ 0 (항상현금 대비 우위 미확인)"
+            ],
             "degraded": false,
-            "oos_hit_lower_bound": 0.30031003928960015
+            "core_version": "2.0",
+            "benchmark_max_drawdown_pct": -19.755885384455674
           },
           "ai_status": "OpenAI 요청 제한(rate limit)",
           "core_data": {
+            "kospi": 6595.45,
             "hy_spread": null,
-            "dxy": 100.014,
-            "t10y2y": 0.7020000000000004,
-            "rsp_3mo_pct": 5.8690510299382455,
-            "us10y": 4.663,
-            "hyg_1mo_pct": -0.6252359798310004,
-            "iwm_1mo_pct": -2.6160798427976673,
-            "kosdaq": 644.78,
-            "usdkrw": 1422.34,
-            "kospi": 5593.56,
-            "semis_1mo_pct": -21.26069163015569,
-            "vix": 17.09,
-            "shiller_pe": 40.62,
-            "sp500_pe": 28.63,
-            "earnings_yield": 3.49,
-            "spy_1mo_pct": -0.6802655969556317,
-            "rsp_1mo_pct": 1.2266746604924859,
-            "spy_3mo_pct": 3.204579038220233
+            "shiller_pe": 40.91,
+            "spy_3mo_pct": 3.6605806830279635,
+            "rsp_1mo_pct": 0.7497288367155831,
+            "rsp_3mo_pct": 6.010251570642574,
+            "earnings_yield": 3.47,
+            "t10y2y": 0.7840000000000003,
+            "dxy": 99.803,
+            "sp500_pe": 28.84,
+            "kosdaq": 719.76,
+            "usdkrw": 1442.07,
+            "semis_1mo_pct": -15.809573166108343,
+            "vix": 15.99,
+            "hyg_1mo_pct": -0.1382037227689314,
+            "spy_1mo_pct": 0.17029476208761865,
+            "iwm_1mo_pct": -2.7128180961933817,
+            "us10y": 4.745
           },
           "core_evidence": [
-            "미국 10년물 4.66%: 밸류에이션 할인율 부담",
-            "주식 이익수익률 3.49%가 10년물 4.66%보다 낮아 위험보상 매력이 약함",
-            "Shiller CAPE 40.6: 장기 밸류에이션 부담이 높은 구간",
-            "장기채와 주식이 같이 약해져 위험자산 회복력이 떨어짐"
+            "미국 10년물 4.75%: 밸류에이션 할인율 부담",
+            "주식 이익수익률 3.47%가 10년물 4.75%보다 낮아 위험보상 매력이 약함",
+            "Shiller CAPE 40.9: 장기 밸류에이션 부담이 높은 구간",
+            "장기채 약세와 높은 금리가 동시에 나타나 성장주 할인율 부담"
           ],
           "buffers": [
-            "RSP 1개월이 SPY보다 1.91%p 강해 시장 폭이 개선",
+            "SPY +1.10%: 지수 모멘텀은 우호적",
             "1개월 기준 하이일드가 투자등급보다 강해 크레딧 선호는 유지"
           ],
           "decision_brief": [
-            "- 오늘 결론: 주의 (Risk 4, 신뢰도 77, 실행 모드 조건부, 권장 비중 42%)",
+            "- 오늘 결론: 주의 (Risk 5, 신뢰도 77, 실행 모드 조건부, 권장 비중 42%)",
             "- 한줄 판단: 확인 후 소액 분할만 검토하는 쪽이 낫습니다.",
             "- 진입 조건: SPY와 동일가중, 소형주, 하이일드가 동시에 버티는지 확인한 뒤 분할 검토",
             "- 무효화 조건: VIX 재상승이나 달러/금리 동반 강세가 나오면 분할을 중단",
@@ -376,6 +375,12 @@
           "record_key": "REPORT#2026-07-31T07:00:24+09:00",
           "generated_at": "2026-07-31T07:00:24+09:00",
           "report_text": "[2026-07-31 글로벌 시장 브리핑]\n신뢰 등급: 검증 중 (표본 28) — 실전 참고 불가 (표본 부족 (28/60); OOS 방향 적중률 하한 30.0% ≤ 50%)\n\n판단: 주의 | 데이터 품질: 100/100 | 신뢰도: 77/100 | Risk 4\n시장 국면: 주의/혼조 | 데이터 신선도: 100/100\n백테스트 상태: 주의 | 표본 28 | 비중 상한 x0.85\n쉽게 말해, 반등은 가능하지만 아직 안심하고 따라붙기엔 확인할 게 남아 있습니다.\n\n[핵심 데이터]\n- 시장 폭: SPY 1개월 -0.68%, RSP 1개월 +1.23%, IWM 1개월 -2.62%, HYG 1개월 -0.63%\n- 변동성/달러: VIX 17.1, US 10Y 4.66%, 달러지수 100.0\n- 한국/환율: KOSPI 5,593.56, KOSDAQ 644.78, USD/KRW 1,422.34\n- 밸류/스프레드: CAPE 40.6, S&P PE 28.6, Earnings Yield 3.49%, HY spread n/a%\n\n[핵심 결론]\n- 오늘 결론: 주의 (Risk 4, 신뢰도 77, 실행 모드 조건부, 권장 비중 42%)\n- 한줄 판단: 확인 후 소액 분할만 검토하는 쪽이 낫습니다.\n- 진입 조건: SPY와 동일가중, 소형주, 하이일드가 동시에 버티는지 확인한 뒤 분할 검토\n- 무효화 조건: VIX 재상승이나 달러/금리 동반 강세가 나오면 분할을 중단\n- 리스크 한도: 일일 손실 -1.0% / 최대 비중 42% / 레버리지 금지\n\n[핵심 근거]\n- 미국 10년물 4.66%: 밸류에이션 할인율 부담 → 금리가 높으면 성장주/기술주 가격이 눌리기 쉽습니다.\n- 주식 이익수익률 3.49%가 10년물 4.66%보다 낮아 위험보상 매력이 약함 → 주식이 채권보다 압도적으로 매력적이라고 보기 어렵습니다.\n- Shiller CAPE 40.6: 장기 밸류에이션 부담이 높은 구간 → 장기 기준으로 미국 주식 가격 부담이 큽니다.\n\n[완충 근거]\n- RSP 1개월이 SPY보다 1.91%p 강해 시장 폭이 개선\n- 1개월 기준 하이일드가 투자등급보다 강해 크레딧 선호는 유지\n\n[AI 보조 판단]\n- AI 신호 미반영: OpenAI 요청 제한(rate limit)\n\n[리스크 체크]\n- 지금은 새로 크게 사기보다, 이미 가진 포지션의 비중과 손실 가능성을 먼저 점검하는 구간입니다.\n- 반등을 믿으려면 대형주뿐 아니라 소형주, 하이일드 채권, 반도체가 같이 살아나야 합니다.\n- VIX가 25를 넘거나 금리/달러가 같이 오르면 현금 비중을 높이는 쪽이 유리합니다.\n\n주의: 투자 조언이 아닌 데이터 기반 참고 브리핑입니다."
+        },
+        {
+          "record_type": "report",
+          "record_key": "REPORT#2026-08-01T07:00:24+09:00",
+          "generated_at": "2026-08-01T07:00:24+09:00",
+          "report_text": "[2026-08-01 글로벌 시장 브리핑]\n신뢰 등급: 검증 중 (표본 29) — 실전 참고 불가 (표본 부족 (29/60); OOS 방향 적중률 하한 32.1% ≤ 50%)\n\n판단: 주의 | 데이터 품질: 100/100 | 신뢰도: 77/100 | Risk 5\n시장 국면: 방어 우위 | 데이터 신선도: 100/100\n백테스트 상태: 주의 | 표본 29 | 비중 상한 x0.85\n쉽게 말해, 반등은 가능하지만 아직 안심하고 따라붙기엔 확인할 게 남아 있습니다.\n\n[핵심 데이터]\n- 시장 폭: SPY 1개월 +0.17%, RSP 1개월 +0.75%, IWM 1개월 -2.71%, HYG 1개월 -0.14%\n- 변동성/달러: VIX 16.0, US 10Y 4.75%, 달러지수 99.8\n- 한국/환율: KOSPI 6,595.45, KOSDAQ 719.76, USD/KRW 1,442.07\n- 밸류/스프레드: CAPE 40.9, S&P PE 28.8, Earnings Yield 3.47%, HY spread n/a%\n\n[핵심 결론]\n- 오늘 결론: 주의 (Risk 5, 신뢰도 77, 실행 모드 조건부, 권장 비중 42%)\n- 한줄 판단: 확인 후 소액 분할만 검토하는 쪽이 낫습니다.\n- 진입 조건: SPY와 동일가중, 소형주, 하이일드가 동시에 버티는지 확인한 뒤 분할 검토\n- 무효화 조건: VIX 재상승이나 달러/금리 동반 강세가 나오면 분할을 중단\n- 리스크 한도: 일일 손실 -1.0% / 최대 비중 42% / 레버리지 금지\n\n[핵심 근거]\n- 미국 10년물 4.75%: 밸류에이션 할인율 부담 → 금리가 높으면 성장주/기술주 가격이 눌리기 쉽습니다.\n- 주식 이익수익률 3.47%가 10년물 4.75%보다 낮아 위험보상 매력이 약함 → 주식이 채권보다 압도적으로 매력적이라고 보기 어렵습니다.\n- Shiller CAPE 40.9: 장기 밸류에이션 부담이 높은 구간 → 장기 기준으로 미국 주식 가격 부담이 큽니다.\n\n[완충 근거]\n- SPY +1.10%: 지수 모멘텀은 우호적 → 미국 대표 ETF가 크게 밀려서 단기 분위기는 약합니다.\n- 1개월 기준 하이일드가 투자등급보다 강해 크레딧 선호는 유지\n\n[AI 보조 판단]\n- AI 신호 미반영: OpenAI 요청 제한(rate limit)\n\n[리스크 체크]\n- 지금은 새로 크게 사기보다, 이미 가진 포지션의 비중과 손실 가능성을 먼저 점검하는 구간입니다.\n- 반등을 믿으려면 대형주뿐 아니라 소형주, 하이일드 채권, 반도체가 같이 살아나야 합니다.\n- VIX가 25를 넘거나 금리/달러가 같이 오르면 현금 비중을 높이는 쪽이 유리합니다.\n\n주의: 투자 조언이 아닌 데이터 기반 참고 브리핑입니다."
         }
       ],
       "decisions": [
@@ -4971,6 +4976,146 @@
             ],
             "decision_brief": [
               "- 오늘 결론: 주의 (Risk 4, 신뢰도 77, 실행 모드 조건부, 권장 비중 42%)",
+              "- 한줄 판단: 확인 후 소액 분할만 검토하는 쪽이 낫습니다.",
+              "- 진입 조건: SPY와 동일가중, 소형주, 하이일드가 동시에 버티는지 확인한 뒤 분할 검토",
+              "- 무효화 조건: VIX 재상승이나 달러/금리 동반 강세가 나오면 분할을 중단",
+              "- 리스크 한도: 일일 손실 -1.0% / 최대 비중 42% / 레버리지 금지"
+            ],
+            "ai_signal": null
+          }
+        },
+        {
+          "record_type": "decision",
+          "record_key": "DECISION#2026-08-01T07:00:24+09:00",
+          "generated_at": "2026-08-01T07:00:24+09:00",
+          "decision_snapshot": {
+            "dashboard": {
+              "positives": [
+                "SPY +1.10%: 지수 모멘텀은 우호적",
+                "1개월 기준 하이일드가 투자등급보다 강해 크레딧 선호는 유지"
+              ],
+              "score": 5,
+              "negatives": [
+                "소형주 1개월 추세가 대형주보다 약해 위험선호 확장이 약함",
+                "소형주가 대형주보다 뚜렷하게 약해 위험선호가 약함",
+                "미국 10년물 4.75%: 밸류에이션 할인율 부담",
+                "장기채 약세와 높은 금리가 동시에 나타나 성장주 할인율 부담",
+                "Shiller CAPE 40.9: 장기 밸류에이션 부담이 높은 구간",
+                "주식 이익수익률 3.47%가 10년물 4.75%보다 낮아 위험보상 매력이 약함"
+              ],
+              "verdict": "주의"
+            },
+            "engine": {
+              "confidence_score": 77,
+              "leverage_allowed": false,
+              "position_size": 42,
+              "critical_missing": [],
+              "trade_mode": "조건부",
+              "invalidation": "VIX 재상승이나 달러/금리 동반 강세가 나오면 분할을 중단",
+              "calibration_sample_count": 29,
+              "calibration_position_cap": 0.85,
+              "daily_loss_limit_pct": 1,
+              "entry_condition": "SPY와 동일가중, 소형주, 하이일드가 동시에 버티는지 확인한 뒤 분할 검토",
+              "calibration_state": "주의",
+              "quality_score": 100
+            },
+            "calibration": {
+              "sample_count": 29,
+              "model": {
+                "intercept": -0.717182497626088,
+                "slope": 0,
+                "r2": 0
+              },
+              "walk_forward_direction_hit_rate": 0.5,
+              "calibration_locked": true,
+              "expected_return_pct": -0.717182497626088,
+              "benchmark_return_pct": -0.5248831554911682,
+              "calibration_lock_reason": "표본 부족 (29/30)",
+              "decision_settings_coverage": 1,
+              "recommended_position_multiplier": 1,
+              "trust_grade": {
+                "usable_for_trading": false,
+                "strategy_mean_return_pct": -0.29643219769298074,
+                "unmet_conditions": [
+                  "표본 부족 (29/60)",
+                  "OOS 방향 적중률 하한 32.1% ≤ 50%",
+                  "전략 수익률 CI 하한 -0.70% ≤ 0 (항상현금 대비 우위 미확인)"
+                ],
+                "grade": "검증 중",
+                "strategy_return_ci_lower_pct": -0.7010093034552067,
+                "benchmark_max_drawdown_pct": -19.755885384455674,
+                "recent_hit_rate": 0.5,
+                "oos_hit_rate": 0.5,
+                "strategy_max_drawdown_pct": -10.64984213734409,
+                "degraded": false,
+                "core_version": "2.0",
+                "oos_hit_lower_bound": 0.3206030631500208,
+                "oos_hit_sample_count": 26,
+                "sample_count": 29
+              },
+              "walk_forward_mae": 1.9730984667534508,
+              "walk_forward_oos_r2": -0.11035237716361768,
+              "benchmark_weights": {
+                "left_weight": 0.5,
+                "right_weight": 0.5,
+                "method": "균등 비중"
+              },
+              "avg_abs_return_pct": 0.7859818515185031,
+              "raw_sample_count": 29
+            },
+            "trust_grade": {
+              "oos_hit_lower_bound": 0.3206030631500208,
+              "sample_count": 29,
+              "oos_hit_sample_count": 26,
+              "strategy_return_ci_lower_pct": -0.7010093034552067,
+              "strategy_max_drawdown_pct": -10.64984213734409,
+              "oos_hit_rate": 0.5,
+              "usable_for_trading": false,
+              "grade": "검증 중",
+              "strategy_mean_return_pct": -0.29643219769298074,
+              "recent_hit_rate": 0.5,
+              "unmet_conditions": [
+                "표본 부족 (29/60)",
+                "OOS 방향 적중률 하한 32.1% ≤ 50%",
+                "전략 수익률 CI 하한 -0.70% ≤ 0 (항상현금 대비 우위 미확인)"
+              ],
+              "degraded": false,
+              "core_version": "2.0",
+              "benchmark_max_drawdown_pct": -19.755885384455674
+            },
+            "ai_status": "OpenAI 요청 제한(rate limit)",
+            "core_data": {
+              "kospi": 6595.45,
+              "hy_spread": null,
+              "shiller_pe": 40.91,
+              "spy_3mo_pct": 3.6605806830279635,
+              "rsp_1mo_pct": 0.7497288367155831,
+              "rsp_3mo_pct": 6.010251570642574,
+              "earnings_yield": 3.47,
+              "t10y2y": 0.7840000000000003,
+              "dxy": 99.803,
+              "sp500_pe": 28.84,
+              "kosdaq": 719.76,
+              "usdkrw": 1442.07,
+              "semis_1mo_pct": -15.809573166108343,
+              "vix": 15.99,
+              "hyg_1mo_pct": -0.1382037227689314,
+              "spy_1mo_pct": 0.17029476208761865,
+              "iwm_1mo_pct": -2.7128180961933817,
+              "us10y": 4.745
+            },
+            "core_evidence": [
+              "미국 10년물 4.75%: 밸류에이션 할인율 부담",
+              "주식 이익수익률 3.47%가 10년물 4.75%보다 낮아 위험보상 매력이 약함",
+              "Shiller CAPE 40.9: 장기 밸류에이션 부담이 높은 구간",
+              "장기채 약세와 높은 금리가 동시에 나타나 성장주 할인율 부담"
+            ],
+            "buffers": [
+              "SPY +1.10%: 지수 모멘텀은 우호적",
+              "1개월 기준 하이일드가 투자등급보다 강해 크레딧 선호는 유지"
+            ],
+            "decision_brief": [
+              "- 오늘 결론: 주의 (Risk 5, 신뢰도 77, 실행 모드 조건부, 권장 비중 42%)",
               "- 한줄 판단: 확인 후 소액 분할만 검토하는 쪽이 낫습니다.",
               "- 진입 조건: SPY와 동일가중, 소형주, 하이일드가 동시에 버티는지 확인한 뒤 분할 검토",
               "- 무효화 조건: VIX 재상승이나 달러/금리 동반 강세가 나오면 분할을 중단",
@@ -12007,165 +12152,168 @@
     },
     {
       "projectId": "crypto-agent",
-      "reportCount": 37,
-      "decisionCount": 37,
+      "reportCount": 38,
+      "decisionCount": 38,
       "latestReport": {
         "record_type": "report",
-        "record_key": "REPORT#2026-07-31T07:00:34+09:00",
-        "generated_at": "2026-07-31T07:00:34+09:00",
-        "report_text": "[2026-07-31 코인 시장 브리핑]\n신뢰 등급: 검증 중 (표본 33) — 실전 참고 불가 (표본 부족 (33/60); OOS 방향 적중률 하한 30.2% ≤ 50%)\n\n판단: 중립~우호 | 실행 관망 0% | 데이터 품질: 100/100 | 신뢰도: 52/100 | 룰 점수 -0.5\n시장 국면: 횡보/중립 | 데이터 신선도: 100/100\n백테스트 상태: 불안정 | 표본 33 | 비중 상한 x0.50\n쉽게 말해, 큰 과열/붕괴 신호는 제한적이지만 코인은 변동성이 커서 분할 접근이 맞습니다.\n\n[핵심 데이터]\n- BTC/ETH: BTC $64,694.00 (+2.00%, 7d -0.60%), ETH $1,917.49 (+1.90%, 7d +1.80%)\n- 차트 추세: BTC 회복 추세 / RSI 52.1 / SMA20 $64,471.20, ETH 회복 추세 / RSI 57.6 / SMA20 $1,878.81\n- 도미넌스/유동성: BTC 도미넌스 56.6%, ETH 도미넌스 10.1%, 스테이블코인 7d -0.78%, 30d -1.10%\n- 파생시장: BTC funding +0.01%, OI 3d -2.17%, 롱/숏 1.56; ETH funding +0.00%, OI 3d -6.15%, 롱/숏 2.20\n- 매크로: VIX 17.1, US 10Y 4.66%, 달러지수 100.0, HYG $79.47\n- 온체인: BTC 활성주소 -3.28%, 거래 +35.27%, 수수료 +16.63%, 해시레이트 +23.43%; ETH 활성주소 +6.22%, 거래 -32.32%, 수수료 +36.67%\n\n[차트 분석]\n- BTC 차트: 현재가 $64,644.22, SMA20 $64,471.20, SMA50 $63,398.92, SMA200 $71,596.70, RSI14 52.1 (회복 추세, 중기선 상회)\n- ETH 차트: 현재가 $1,916.62, SMA20 $1,878.81, SMA50 $1,769.31, SMA200 $2,116.12, RSI14 57.6 (회복 추세, 중기선 상회)\n- SOL 차트: 현재가 $74.38, SMA20 $75.80, SMA50 $74.66, SMA200 $86.78, RSI14 46.1 (중립)\n\n[핵심 결론]\n- 오늘 결론: 중립~우호 (Risk -0.5, 신뢰도 52, 실행 모드 관망, 권장 비중 0%)\n- 한줄 판단: 지금은 관망이 더 안전합니다.\n- 진입 조건: 데이터 품질이 높고 BTC/ETH 상대강도가 개선될 때만 작은 비중으로 접근\n- 무효화 조건: 대기자금이 줄거나 고베타 알트가 BTC보다 계속 약하면 비중 확대 중지\n- 리스크 한도: 일일 손실 -0.0% / 최대 비중 0% / 레버리지 금지\n\n[핵심 근거]\n- 스테이블코인 공급 7일 -0.78%: 유동성은 약간 빠지는 중 -> 스테이블코인은 코인 시장의 대기자금이라 줄면 매수 체력이 약해집니다.\n- BTC 3개월 -15.28%: 긴 추세 약세가 남아 있음\n- SOL 1개월 추세가 BTC보다 약해 고베타 알트 선호가 약함\n\n[완충 근거]\n- BTC 1개월 +10.39%: 중기 추세가 우호적\n- ETH 1개월이 BTC보다 11.72%p 강해 알트 회복 신호\n\n[AI 보조 판단]\n- AI 신호 미반영: OpenAI 요청 제한(rate limit)\n\n[리스크 체크]\n- 1순위는 진입보다 리스크 한도입니다. 코인은 하루 변동성이 커서 총 투자금과 손절 기준을 먼저 정합니다.\n- 메이저 중심으로 분할 접근하되, BTC가 다시 7일 기준 약세로 꺾이면 속도를 줄입니다.\n- ETH가 BTC보다 강하면 알트 비중을 조금 열 수 있지만, SOL/LINK 같은 유동성 큰 종목부터 봅니다.\n\n주의: 투자 조언이 아닌 데이터 기반 참고 브리핑입니다."
+        "record_key": "REPORT#2026-08-01T07:00:34+09:00",
+        "generated_at": "2026-08-01T07:00:34+09:00",
+        "report_text": "[2026-08-01 코인 시장 브리핑]\n신뢰 등급: 검증 중 (표본 34) — 실전 참고 불가 (표본 부족 (34/60); OOS 방향 적중률 하한 32.0% ≤ 50%)\n\n판단: 중립~우호 | 실행 관망 0% | 데이터 품질: 100/100 | 신뢰도: 68/100 | 룰 점수 2.75\n시장 국면: 혼조 | 데이터 신선도: 100/100\n백테스트 상태: 불안정 | 표본 34 | 비중 상한 x0.50\n쉽게 말해, 큰 과열/붕괴 신호는 제한적이지만 코인은 변동성이 커서 분할 접근이 맞습니다.\n\n[핵심 데이터]\n- BTC/ETH: BTC $62,883.00 (-2.90%, 7d -2.00%), ETH $1,859.35 (-3.20%, 7d 0.00%)\n- 차트 추세: BTC 중립 / RSI 44.2 / SMA20 $64,428.21, ETH 회복 추세 / RSI 50.4 / SMA20 $1,882.38\n- 도미넌스/유동성: BTC 도미넌스 56.3%, ETH 도미넌스 10.0%, 스테이블코인 7d -0.35%, 30d -0.84%\n- 파생시장: BTC funding +0.01%, OI 3d +2.57%, 롱/숏 1.25; ETH funding -0.00%, OI 3d +1.76%, 롱/숏 2.00\n- 매크로: VIX 16.0, US 10Y 4.75%, 달러지수 99.8, HYG $79.48\n- 온체인: BTC 활성주소 +5.95%, 거래 +14.27%, 수수료 +17.36%, 해시레이트 +15.05%; ETH 활성주소 +0.35%, 거래 -25.15%, 수수료 +168.03%\n\n[차트 분석]\n- BTC 차트: 현재가 $62,861.19, SMA20 $64,428.21, SMA50 $63,386.54, SMA200 $71,455.45, RSI14 44.2 (중립)\n- ETH 차트: 현재가 $1,858.86, SMA20 $1,882.38, SMA50 $1,773.06, SMA200 $2,109.96, RSI14 50.4 (회복 추세, 중기선 상회)\n- SOL 차트: 현재가 $72.65, SMA20 $75.60, SMA50 $74.78, SMA200 $86.45, RSI14 41.6 (중립)\n\n[핵심 결론]\n- 오늘 결론: 중립~우호 (Risk 2.75, 신뢰도 68, 실행 모드 관망, 권장 비중 0%)\n- 한줄 판단: 지금은 관망이 더 안전합니다.\n- 진입 조건: 데이터 품질이 높고 BTC/ETH 상대강도가 개선될 때만 작은 비중으로 접근\n- 무효화 조건: 대기자금이 줄거나 고베타 알트가 BTC보다 계속 약하면 비중 확대 중지\n- 리스크 한도: 일일 손실 -0.0% / 최대 비중 0% / 레버리지 금지\n\n[핵심 근거]\n- 스테이블코인 공급 7일 -0.35%: 유동성은 약간 빠지는 중 -> 스테이블코인은 코인 시장의 대기자금이라 줄면 매수 체력이 약해집니다.\n- SOL 차트가 약해 고베타 알트 심리가 아직 약함 -> 가격 구조와 추세 정렬을 보는 보조 확인 신호입니다.\n- BTC 24시간 -2.90%: 단기 흐름이 약함 -> 대표 코인이 약하면 알트코인은 더 크게 흔들리기 쉽습니다.\n\n[완충 근거]\n- ETH 1개월이 BTC보다 11.09%p 강해 알트 회복 신호\n- BTC 해시레이트 7일 +15.05%: 네트워크 보안과 활동이 견조\n\n[AI 보조 판단]\n- AI 신호 미반영: OpenAI 요청 제한(rate limit)\n\n[리스크 체크]\n- 1순위는 진입보다 리스크 한도입니다. 코인은 하루 변동성이 커서 총 투자금과 손절 기준을 먼저 정합니다.\n- 메이저 중심으로 분할 접근하되, BTC가 다시 7일 기준 약세로 꺾이면 속도를 줄입니다.\n- ETH가 BTC보다 약하면 알트 확장은 보류하고 BTC/현금 중심으로 봅니다.\n\n주의: 투자 조언이 아닌 데이터 기반 참고 브리핑입니다."
       },
       "latestDecision": {
         "record_type": "decision",
-        "record_key": "DECISION#2026-07-31T07:00:34+09:00",
-        "generated_at": "2026-07-31T07:00:34+09:00",
+        "record_key": "DECISION#2026-08-01T07:00:34+09:00",
+        "generated_at": "2026-08-01T07:00:34+09:00",
         "decision_snapshot": {
           "dashboard": {
-            "verdict": "중립~우호",
             "positives": [
-              "BTC 1개월 +10.39%: 중기 추세가 우호적",
-              "ETH 1개월이 BTC보다 11.72%p 강해 알트 회복 신호",
-              "BTC 해시레이트 7일 +23.43%: 네트워크 보안과 활동이 견조",
-              "ETH 수수료 7일 +36.67%: 네트워크 수요가 커진 흔적"
+              "ETH 1개월이 BTC보다 11.09%p 강해 알트 회복 신호",
+              "BTC 해시레이트 7일 +15.05%: 네트워크 보안과 활동이 견조",
+              "ETH 수수료 7일 +168.03%: 네트워크 수요가 커진 흔적",
+              "ETH 차트가 중기선 위에서 버티며 알트 회복 확인 신호"
             ],
+            "verdict": "중립~우호",
             "negatives": [
-              "BTC 3개월 -15.28%: 긴 추세 약세가 남아 있음",
+              "BTC 24시간 -2.90%: 단기 흐름이 약함",
+              "BTC 3개월 -17.62%: 긴 추세 약세가 남아 있음",
               "SOL 1개월 추세가 BTC보다 약해 고베타 알트 선호가 약함",
-              "스테이블코인 공급 7일 -0.78%: 유동성은 약간 빠지는 중",
-              "미국 10년물 4.66%: 할인율 부담이 커짐"
+              "스테이블코인 공급 7일 -0.35%: 유동성은 약간 빠지는 중",
+              "SOL 차트가 약해 고베타 알트 심리가 아직 약함",
+              "미국 소형주가 대형주보다 약해 위험선호 확장이 약함",
+              "미국 10년물 4.75%: 할인율 부담이 커짐"
             ],
-            "score": -0.5
+            "score": 2.75
           },
           "engine": {
             "daily_loss_limit_pct": 0,
-            "calibration_state": "불안정",
-            "confidence_score": 52,
-            "position_size": 0,
-            "critical_missing": [],
+            "calibration_sample_count": 34,
             "entry_condition": "데이터 품질이 높고 BTC/ETH 상대강도가 개선될 때만 작은 비중으로 접근",
-            "invalidation": "대기자금이 줄거나 고베타 알트가 BTC보다 계속 약하면 비중 확대 중지",
-            "trade_mode": "관망",
-            "quality_score": 100,
+            "confidence_score": 68,
             "calibration_position_cap": 0.5,
-            "calibration_sample_count": 33,
-            "leverage_allowed": false
+            "quality_score": 100,
+            "calibration_state": "불안정",
+            "invalidation": "대기자금이 줄거나 고베타 알트가 BTC보다 계속 약하면 비중 확대 중지",
+            "critical_missing": [],
+            "trade_mode": "관망",
+            "leverage_allowed": false,
+            "position_size": 0
           },
           "calibration": {
-            "walk_forward_mae": 1.486879852978237,
+            "avg_abs_return_pct": 0.7368117239457497,
+            "walk_forward_oos_r2": -0.294637529132447,
             "recommended_position_multiplier": 1,
+            "walk_forward_direction_hit_rate": 0.4838709677419355,
+            "expected_return_pct": 0.12144171762660404,
             "calibration_locked": true,
-            "model": {
-              "r2": 0.01077578618215791,
-              "slope": -0.13673320988570475,
-              "intercept": 0.10950063950659038
-            },
-            "raw_sample_count": 33,
+            "raw_sample_count": 34,
+            "walk_forward_mae": 1.485383725016469,
+            "sample_count": 34,
+            "calibration_lock_reason": "walk-forward OOS R² -0.29 < 0.10",
             "decision_settings_coverage": 1,
-            "sample_count": 33,
-            "walk_forward_direction_hit_rate": 0.4666666666666667,
-            "avg_abs_return_pct": 0.7315790387950404,
-            "calibration_lock_reason": "walk-forward OOS R² -0.31 < 0.10",
-            "trust_grade": {
-              "core_version": "2.0",
-              "strategy_mean_return_pct": 0.05974758562423999,
-              "degraded": true,
-              "oos_hit_sample_count": 30,
-              "strategy_return_ci_lower_pct": -0.24143975375275578,
-              "oos_hit_rate": 0.4666666666666667,
-              "usable_for_trading": false,
-              "strategy_max_drawdown_pct": -3.8359135570123604,
-              "unmet_conditions": [
-                "표본 부족 (33/60)",
-                "OOS 방향 적중률 하한 30.2% ≤ 50%",
-                "전략 수익률 CI 하한 -0.24% ≤ 0 (항상현금 대비 우위 미확인)"
-              ],
-              "grade": "검증 중",
-              "oos_hit_lower_bound": 0.3023212722412823,
-              "benchmark_max_drawdown_pct": -8.865507634360071,
-              "sample_count": 33,
-              "recent_hit_rate": 0.4666666666666667
+            "model": {
+              "slope": -0.14737729771449853,
+              "intercept": 0.15828604205522867,
+              "r2": 0.012233469203331682
             },
-            "expected_return_pct": 0.07531733703516419,
-            "walk_forward_oos_r2": -0.30664714498410706
+            "trust_grade": {
+              "strategy_return_ci_lower_pct": -0.21153224327551806,
+              "core_version": "2.0",
+              "strategy_mean_return_pct": 0.08474001939761988,
+              "recent_hit_rate": 0.4666666666666667,
+              "grade": "검증 중",
+              "degraded": true,
+              "oos_hit_lower_bound": 0.3196998603127883,
+              "sample_count": 34,
+              "oos_hit_sample_count": 31,
+              "strategy_max_drawdown_pct": -3.8359135570123604,
+              "usable_for_trading": false,
+              "unmet_conditions": [
+                "표본 부족 (34/60)",
+                "OOS 방향 적중률 하한 32.0% ≤ 50%",
+                "전략 수익률 CI 하한 -0.21% ≤ 0 (항상현금 대비 우위 미확인)"
+              ],
+              "benchmark_max_drawdown_pct": -8.865507634360071,
+              "oos_hit_rate": 0.4838709677419355
+            }
           },
           "trust_grade": {
-            "degraded": true,
             "core_version": "2.0",
-            "oos_hit_sample_count": 30,
-            "strategy_mean_return_pct": 0.05974758562423999,
-            "usable_for_trading": false,
-            "oos_hit_lower_bound": 0.3023212722412823,
-            "strategy_max_drawdown_pct": -3.8359135570123604,
-            "sample_count": 33,
-            "unmet_conditions": [
-              "표본 부족 (33/60)",
-              "OOS 방향 적중률 하한 30.2% ≤ 50%",
-              "전략 수익률 CI 하한 -0.24% ≤ 0 (항상현금 대비 우위 미확인)"
-            ],
-            "strategy_return_ci_lower_pct": -0.24143975375275578,
-            "benchmark_max_drawdown_pct": -8.865507634360071,
-            "oos_hit_rate": 0.4666666666666667,
+            "degraded": true,
             "grade": "검증 중",
-            "recent_hit_rate": 0.4666666666666667
+            "oos_hit_lower_bound": 0.3196998603127883,
+            "strategy_mean_return_pct": 0.08474001939761988,
+            "strategy_return_ci_lower_pct": -0.21153224327551806,
+            "strategy_max_drawdown_pct": -3.8359135570123604,
+            "usable_for_trading": false,
+            "oos_hit_rate": 0.4838709677419355,
+            "recent_hit_rate": 0.4666666666666667,
+            "unmet_conditions": [
+              "표본 부족 (34/60)",
+              "OOS 방향 적중률 하한 32.0% ≤ 50%",
+              "전략 수익률 CI 하한 -0.21% ≤ 0 (항상현금 대비 우위 미확인)"
+            ],
+            "sample_count": 34,
+            "oos_hit_sample_count": 31,
+            "benchmark_max_drawdown_pct": -8.865507634360071
           },
           "ai_status": "OpenAI 요청 제한(rate limit)",
           "core_data": {
-            "eth_30d": 21.8,
-            "btc_24h": 2,
-            "vix": 17.09,
-            "eth_rsi14": 57.55190230785806,
-            "eth_24h": 1.9,
-            "btc_active_7d": -3.275200407298716,
-            "btc_hash_7d": 23.42967538397779,
-            "btc_price": 64694,
-            "eth_active_7d": 6.219819060660323,
-            "btc_dom": 56.57409094978503,
-            "funding_btc": 0.009029,
-            "dxy": 100.013,
-            "eth_sma50": 1769.3138110351563,
+            "eth_price": 1859.35,
+            "dxy": 99.803,
+            "funding_eth": -0.002045,
+            "stable_30d": -0.8368952395763376,
+            "eth_24h": -3.2,
+            "btc_30d": 4.7,
+            "eth_fee_7d": 168.0259907169449,
+            "funding_btc": 0.005664,
+            "vix": 15.99,
+            "btc_tx_7d": 14.267430969975434,
+            "btc_rsi14": 44.20151390300226,
+            "btc_sma20": 64428.2138671875,
+            "btc_sma200": 71455.44548828126,
+            "global_24h": -2.132349228358152,
+            "oi_btc_3d": 2.566195712969231,
+            "eth_active_7d": 0.345814368815536,
+            "eth_rsi14": 50.44369285815439,
+            "fng_value": 25,
+            "ls_btc": 1.2538,
+            "oi_eth_3d": 1.760009453219282,
+            "eth_sma50": 1773.0604565429687,
+            "btc_price": 62883,
+            "eth_sma20": 1882.3825988769531,
+            "btc_sma50": 63386.541875,
+            "us10y": 4.745,
+            "btc_active_7d": 5.9508168037285065,
+            "eth_dom": 10.003425603599919,
+            "stable_7d": -0.3533960450657629,
+            "btc_24h": -2.9,
+            "sol_7d": -1.6,
+            "hyg": 79.48,
+            "btc_fee_7d": 17.36419096321196,
+            "eth_tx_7d": -25.14913317138745,
+            "btc_trend_state": "중립",
+            "ls_eth": 1.9994,
+            "eth_sma200": 2109.959910888672,
+            "btc_dom": 56.25415869910449,
+            "fng_classification": "Extreme Fear",
+            "btc_7d": -2,
             "eth_trend_state": "회복 추세",
-            "stable_7d": -0.778347841333776,
-            "ls_btc": 1.5595,
-            "fng_classification": "Fear",
-            "us10y": 4.663,
-            "btc_fee_7d": 16.629774584138463,
-            "sol_7d": -2.1,
-            "btc_7d": -0.6,
-            "eth_7d": 1.8,
-            "stable_30d": -1.1037042035830322,
-            "oi_btc_3d": -2.166917206323684,
-            "oi_eth_3d": -6.146117319683277,
-            "eth_fee_7d": 36.67464611811414,
-            "btc_trend_state": "회복 추세",
-            "eth_dom": 10.090099929542545,
-            "eth_sma20": 1878.80693359375,
-            "btc_rsi14": 52.14056128081934,
-            "eth_price": 1917.49,
-            "btc_sma50": 63398.91734375,
-            "ls_eth": 2.1959,
-            "hyg": 79.47,
-            "fng_value": 28,
-            "global_24h": 1.4104043164306737,
-            "btc_30d": 10.3,
-            "eth_tx_7d": -32.31589506594483,
-            "btc_sma20": 64471.201171875,
-            "btc_sma200": 71596.69904296874,
-            "funding_eth": 0.00199,
-            "btc_tx_7d": 35.2708594780706,
-            "eth_sma200": 2116.123472290039
+            "eth_7d": 0,
+            "btc_hash_7d": 15.05324845002001,
+            "eth_30d": 15.1
           },
           "core_evidence": [
-            "스테이블코인 공급 7일 -0.78%: 유동성은 약간 빠지는 중",
-            "BTC 3개월 -15.28%: 긴 추세 약세가 남아 있음",
-            "SOL 1개월 추세가 BTC보다 약해 고베타 알트 선호가 약함",
-            "미국 10년물 4.66%: 할인율 부담이 커짐"
+            "스테이블코인 공급 7일 -0.35%: 유동성은 약간 빠지는 중",
+            "SOL 차트가 약해 고베타 알트 심리가 아직 약함",
+            "BTC 24시간 -2.90%: 단기 흐름이 약함",
+            "BTC 3개월 -17.62%: 긴 추세 약세가 남아 있음"
           ],
           "buffers": [
-            "BTC 1개월 +10.39%: 중기 추세가 우호적",
-            "ETH 1개월이 BTC보다 11.72%p 강해 알트 회복 신호"
+            "ETH 1개월이 BTC보다 11.09%p 강해 알트 회복 신호",
+            "BTC 해시레이트 7일 +15.05%: 네트워크 보안과 활동이 견조"
           ],
           "decision_brief": [
-            "- 오늘 결론: 중립~우호 (Risk -0.5, 신뢰도 52, 실행 모드 관망, 권장 비중 0%)",
+            "- 오늘 결론: 중립~우호 (Risk 2.75, 신뢰도 68, 실행 모드 관망, 권장 비중 0%)",
             "- 한줄 판단: 지금은 관망이 더 안전합니다.",
             "- 진입 조건: 데이터 품질이 높고 BTC/ETH 상대강도가 개선될 때만 작은 비중으로 접근",
             "- 무효화 조건: 대기자금이 줄거나 고베타 알트가 BTC보다 계속 약하면 비중 확대 중지",
@@ -12396,6 +12544,12 @@
           "record_key": "REPORT#2026-07-31T07:00:34+09:00",
           "generated_at": "2026-07-31T07:00:34+09:00",
           "report_text": "[2026-07-31 코인 시장 브리핑]\n신뢰 등급: 검증 중 (표본 33) — 실전 참고 불가 (표본 부족 (33/60); OOS 방향 적중률 하한 30.2% ≤ 50%)\n\n판단: 중립~우호 | 실행 관망 0% | 데이터 품질: 100/100 | 신뢰도: 52/100 | 룰 점수 -0.5\n시장 국면: 횡보/중립 | 데이터 신선도: 100/100\n백테스트 상태: 불안정 | 표본 33 | 비중 상한 x0.50\n쉽게 말해, 큰 과열/붕괴 신호는 제한적이지만 코인은 변동성이 커서 분할 접근이 맞습니다.\n\n[핵심 데이터]\n- BTC/ETH: BTC $64,694.00 (+2.00%, 7d -0.60%), ETH $1,917.49 (+1.90%, 7d +1.80%)\n- 차트 추세: BTC 회복 추세 / RSI 52.1 / SMA20 $64,471.20, ETH 회복 추세 / RSI 57.6 / SMA20 $1,878.81\n- 도미넌스/유동성: BTC 도미넌스 56.6%, ETH 도미넌스 10.1%, 스테이블코인 7d -0.78%, 30d -1.10%\n- 파생시장: BTC funding +0.01%, OI 3d -2.17%, 롱/숏 1.56; ETH funding +0.00%, OI 3d -6.15%, 롱/숏 2.20\n- 매크로: VIX 17.1, US 10Y 4.66%, 달러지수 100.0, HYG $79.47\n- 온체인: BTC 활성주소 -3.28%, 거래 +35.27%, 수수료 +16.63%, 해시레이트 +23.43%; ETH 활성주소 +6.22%, 거래 -32.32%, 수수료 +36.67%\n\n[차트 분석]\n- BTC 차트: 현재가 $64,644.22, SMA20 $64,471.20, SMA50 $63,398.92, SMA200 $71,596.70, RSI14 52.1 (회복 추세, 중기선 상회)\n- ETH 차트: 현재가 $1,916.62, SMA20 $1,878.81, SMA50 $1,769.31, SMA200 $2,116.12, RSI14 57.6 (회복 추세, 중기선 상회)\n- SOL 차트: 현재가 $74.38, SMA20 $75.80, SMA50 $74.66, SMA200 $86.78, RSI14 46.1 (중립)\n\n[핵심 결론]\n- 오늘 결론: 중립~우호 (Risk -0.5, 신뢰도 52, 실행 모드 관망, 권장 비중 0%)\n- 한줄 판단: 지금은 관망이 더 안전합니다.\n- 진입 조건: 데이터 품질이 높고 BTC/ETH 상대강도가 개선될 때만 작은 비중으로 접근\n- 무효화 조건: 대기자금이 줄거나 고베타 알트가 BTC보다 계속 약하면 비중 확대 중지\n- 리스크 한도: 일일 손실 -0.0% / 최대 비중 0% / 레버리지 금지\n\n[핵심 근거]\n- 스테이블코인 공급 7일 -0.78%: 유동성은 약간 빠지는 중 -> 스테이블코인은 코인 시장의 대기자금이라 줄면 매수 체력이 약해집니다.\n- BTC 3개월 -15.28%: 긴 추세 약세가 남아 있음\n- SOL 1개월 추세가 BTC보다 약해 고베타 알트 선호가 약함\n\n[완충 근거]\n- BTC 1개월 +10.39%: 중기 추세가 우호적\n- ETH 1개월이 BTC보다 11.72%p 강해 알트 회복 신호\n\n[AI 보조 판단]\n- AI 신호 미반영: OpenAI 요청 제한(rate limit)\n\n[리스크 체크]\n- 1순위는 진입보다 리스크 한도입니다. 코인은 하루 변동성이 커서 총 투자금과 손절 기준을 먼저 정합니다.\n- 메이저 중심으로 분할 접근하되, BTC가 다시 7일 기준 약세로 꺾이면 속도를 줄입니다.\n- ETH가 BTC보다 강하면 알트 비중을 조금 열 수 있지만, SOL/LINK 같은 유동성 큰 종목부터 봅니다.\n\n주의: 투자 조언이 아닌 데이터 기반 참고 브리핑입니다."
+        },
+        {
+          "record_type": "report",
+          "record_key": "REPORT#2026-08-01T07:00:34+09:00",
+          "generated_at": "2026-08-01T07:00:34+09:00",
+          "report_text": "[2026-08-01 코인 시장 브리핑]\n신뢰 등급: 검증 중 (표본 34) — 실전 참고 불가 (표본 부족 (34/60); OOS 방향 적중률 하한 32.0% ≤ 50%)\n\n판단: 중립~우호 | 실행 관망 0% | 데이터 품질: 100/100 | 신뢰도: 68/100 | 룰 점수 2.75\n시장 국면: 혼조 | 데이터 신선도: 100/100\n백테스트 상태: 불안정 | 표본 34 | 비중 상한 x0.50\n쉽게 말해, 큰 과열/붕괴 신호는 제한적이지만 코인은 변동성이 커서 분할 접근이 맞습니다.\n\n[핵심 데이터]\n- BTC/ETH: BTC $62,883.00 (-2.90%, 7d -2.00%), ETH $1,859.35 (-3.20%, 7d 0.00%)\n- 차트 추세: BTC 중립 / RSI 44.2 / SMA20 $64,428.21, ETH 회복 추세 / RSI 50.4 / SMA20 $1,882.38\n- 도미넌스/유동성: BTC 도미넌스 56.3%, ETH 도미넌스 10.0%, 스테이블코인 7d -0.35%, 30d -0.84%\n- 파생시장: BTC funding +0.01%, OI 3d +2.57%, 롱/숏 1.25; ETH funding -0.00%, OI 3d +1.76%, 롱/숏 2.00\n- 매크로: VIX 16.0, US 10Y 4.75%, 달러지수 99.8, HYG $79.48\n- 온체인: BTC 활성주소 +5.95%, 거래 +14.27%, 수수료 +17.36%, 해시레이트 +15.05%; ETH 활성주소 +0.35%, 거래 -25.15%, 수수료 +168.03%\n\n[차트 분석]\n- BTC 차트: 현재가 $62,861.19, SMA20 $64,428.21, SMA50 $63,386.54, SMA200 $71,455.45, RSI14 44.2 (중립)\n- ETH 차트: 현재가 $1,858.86, SMA20 $1,882.38, SMA50 $1,773.06, SMA200 $2,109.96, RSI14 50.4 (회복 추세, 중기선 상회)\n- SOL 차트: 현재가 $72.65, SMA20 $75.60, SMA50 $74.78, SMA200 $86.45, RSI14 41.6 (중립)\n\n[핵심 결론]\n- 오늘 결론: 중립~우호 (Risk 2.75, 신뢰도 68, 실행 모드 관망, 권장 비중 0%)\n- 한줄 판단: 지금은 관망이 더 안전합니다.\n- 진입 조건: 데이터 품질이 높고 BTC/ETH 상대강도가 개선될 때만 작은 비중으로 접근\n- 무효화 조건: 대기자금이 줄거나 고베타 알트가 BTC보다 계속 약하면 비중 확대 중지\n- 리스크 한도: 일일 손실 -0.0% / 최대 비중 0% / 레버리지 금지\n\n[핵심 근거]\n- 스테이블코인 공급 7일 -0.35%: 유동성은 약간 빠지는 중 -> 스테이블코인은 코인 시장의 대기자금이라 줄면 매수 체력이 약해집니다.\n- SOL 차트가 약해 고베타 알트 심리가 아직 약함 -> 가격 구조와 추세 정렬을 보는 보조 확인 신호입니다.\n- BTC 24시간 -2.90%: 단기 흐름이 약함 -> 대표 코인이 약하면 알트코인은 더 크게 흔들리기 쉽습니다.\n\n[완충 근거]\n- ETH 1개월이 BTC보다 11.09%p 강해 알트 회복 신호\n- BTC 해시레이트 7일 +15.05%: 네트워크 보안과 활동이 견조\n\n[AI 보조 판단]\n- AI 신호 미반영: OpenAI 요청 제한(rate limit)\n\n[리스크 체크]\n- 1순위는 진입보다 리스크 한도입니다. 코인은 하루 변동성이 커서 총 투자금과 손절 기준을 먼저 정합니다.\n- 메이저 중심으로 분할 접근하되, BTC가 다시 7일 기준 약세로 꺾이면 속도를 줄입니다.\n- ETH가 BTC보다 약하면 알트 확장은 보류하고 BTC/현금 중심으로 봅니다.\n\n주의: 투자 조언이 아닌 데이터 기반 참고 브리핑입니다."
         }
       ],
       "decisions": [
@@ -17641,6 +17795,168 @@
             ],
             "decision_brief": [
               "- 오늘 결론: 중립~우호 (Risk -0.5, 신뢰도 52, 실행 모드 관망, 권장 비중 0%)",
+              "- 한줄 판단: 지금은 관망이 더 안전합니다.",
+              "- 진입 조건: 데이터 품질이 높고 BTC/ETH 상대강도가 개선될 때만 작은 비중으로 접근",
+              "- 무효화 조건: 대기자금이 줄거나 고베타 알트가 BTC보다 계속 약하면 비중 확대 중지",
+              "- 리스크 한도: 일일 손실 -0.0% / 최대 비중 0% / 레버리지 금지"
+            ],
+            "ai_signal": null
+          }
+        },
+        {
+          "record_type": "decision",
+          "record_key": "DECISION#2026-08-01T07:00:34+09:00",
+          "generated_at": "2026-08-01T07:00:34+09:00",
+          "decision_snapshot": {
+            "dashboard": {
+              "positives": [
+                "ETH 1개월이 BTC보다 11.09%p 강해 알트 회복 신호",
+                "BTC 해시레이트 7일 +15.05%: 네트워크 보안과 활동이 견조",
+                "ETH 수수료 7일 +168.03%: 네트워크 수요가 커진 흔적",
+                "ETH 차트가 중기선 위에서 버티며 알트 회복 확인 신호"
+              ],
+              "verdict": "중립~우호",
+              "negatives": [
+                "BTC 24시간 -2.90%: 단기 흐름이 약함",
+                "BTC 3개월 -17.62%: 긴 추세 약세가 남아 있음",
+                "SOL 1개월 추세가 BTC보다 약해 고베타 알트 선호가 약함",
+                "스테이블코인 공급 7일 -0.35%: 유동성은 약간 빠지는 중",
+                "SOL 차트가 약해 고베타 알트 심리가 아직 약함",
+                "미국 소형주가 대형주보다 약해 위험선호 확장이 약함",
+                "미국 10년물 4.75%: 할인율 부담이 커짐"
+              ],
+              "score": 2.75
+            },
+            "engine": {
+              "daily_loss_limit_pct": 0,
+              "calibration_sample_count": 34,
+              "entry_condition": "데이터 품질이 높고 BTC/ETH 상대강도가 개선될 때만 작은 비중으로 접근",
+              "confidence_score": 68,
+              "calibration_position_cap": 0.5,
+              "quality_score": 100,
+              "calibration_state": "불안정",
+              "invalidation": "대기자금이 줄거나 고베타 알트가 BTC보다 계속 약하면 비중 확대 중지",
+              "critical_missing": [],
+              "trade_mode": "관망",
+              "leverage_allowed": false,
+              "position_size": 0
+            },
+            "calibration": {
+              "avg_abs_return_pct": 0.7368117239457497,
+              "walk_forward_oos_r2": -0.294637529132447,
+              "recommended_position_multiplier": 1,
+              "walk_forward_direction_hit_rate": 0.4838709677419355,
+              "expected_return_pct": 0.12144171762660404,
+              "calibration_locked": true,
+              "raw_sample_count": 34,
+              "walk_forward_mae": 1.485383725016469,
+              "sample_count": 34,
+              "calibration_lock_reason": "walk-forward OOS R² -0.29 < 0.10",
+              "decision_settings_coverage": 1,
+              "model": {
+                "slope": -0.14737729771449853,
+                "intercept": 0.15828604205522867,
+                "r2": 0.012233469203331682
+              },
+              "trust_grade": {
+                "strategy_return_ci_lower_pct": -0.21153224327551806,
+                "core_version": "2.0",
+                "strategy_mean_return_pct": 0.08474001939761988,
+                "recent_hit_rate": 0.4666666666666667,
+                "grade": "검증 중",
+                "degraded": true,
+                "oos_hit_lower_bound": 0.3196998603127883,
+                "sample_count": 34,
+                "oos_hit_sample_count": 31,
+                "strategy_max_drawdown_pct": -3.8359135570123604,
+                "usable_for_trading": false,
+                "unmet_conditions": [
+                  "표본 부족 (34/60)",
+                  "OOS 방향 적중률 하한 32.0% ≤ 50%",
+                  "전략 수익률 CI 하한 -0.21% ≤ 0 (항상현금 대비 우위 미확인)"
+                ],
+                "benchmark_max_drawdown_pct": -8.865507634360071,
+                "oos_hit_rate": 0.4838709677419355
+              }
+            },
+            "trust_grade": {
+              "core_version": "2.0",
+              "degraded": true,
+              "grade": "검증 중",
+              "oos_hit_lower_bound": 0.3196998603127883,
+              "strategy_mean_return_pct": 0.08474001939761988,
+              "strategy_return_ci_lower_pct": -0.21153224327551806,
+              "strategy_max_drawdown_pct": -3.8359135570123604,
+              "usable_for_trading": false,
+              "oos_hit_rate": 0.4838709677419355,
+              "recent_hit_rate": 0.4666666666666667,
+              "unmet_conditions": [
+                "표본 부족 (34/60)",
+                "OOS 방향 적중률 하한 32.0% ≤ 50%",
+                "전략 수익률 CI 하한 -0.21% ≤ 0 (항상현금 대비 우위 미확인)"
+              ],
+              "sample_count": 34,
+              "oos_hit_sample_count": 31,
+              "benchmark_max_drawdown_pct": -8.865507634360071
+            },
+            "ai_status": "OpenAI 요청 제한(rate limit)",
+            "core_data": {
+              "eth_price": 1859.35,
+              "dxy": 99.803,
+              "funding_eth": -0.002045,
+              "stable_30d": -0.8368952395763376,
+              "eth_24h": -3.2,
+              "btc_30d": 4.7,
+              "eth_fee_7d": 168.0259907169449,
+              "funding_btc": 0.005664,
+              "vix": 15.99,
+              "btc_tx_7d": 14.267430969975434,
+              "btc_rsi14": 44.20151390300226,
+              "btc_sma20": 64428.2138671875,
+              "btc_sma200": 71455.44548828126,
+              "global_24h": -2.132349228358152,
+              "oi_btc_3d": 2.566195712969231,
+              "eth_active_7d": 0.345814368815536,
+              "eth_rsi14": 50.44369285815439,
+              "fng_value": 25,
+              "ls_btc": 1.2538,
+              "oi_eth_3d": 1.760009453219282,
+              "eth_sma50": 1773.0604565429687,
+              "btc_price": 62883,
+              "eth_sma20": 1882.3825988769531,
+              "btc_sma50": 63386.541875,
+              "us10y": 4.745,
+              "btc_active_7d": 5.9508168037285065,
+              "eth_dom": 10.003425603599919,
+              "stable_7d": -0.3533960450657629,
+              "btc_24h": -2.9,
+              "sol_7d": -1.6,
+              "hyg": 79.48,
+              "btc_fee_7d": 17.36419096321196,
+              "eth_tx_7d": -25.14913317138745,
+              "btc_trend_state": "중립",
+              "ls_eth": 1.9994,
+              "eth_sma200": 2109.959910888672,
+              "btc_dom": 56.25415869910449,
+              "fng_classification": "Extreme Fear",
+              "btc_7d": -2,
+              "eth_trend_state": "회복 추세",
+              "eth_7d": 0,
+              "btc_hash_7d": 15.05324845002001,
+              "eth_30d": 15.1
+            },
+            "core_evidence": [
+              "스테이블코인 공급 7일 -0.35%: 유동성은 약간 빠지는 중",
+              "SOL 차트가 약해 고베타 알트 심리가 아직 약함",
+              "BTC 24시간 -2.90%: 단기 흐름이 약함",
+              "BTC 3개월 -17.62%: 긴 추세 약세가 남아 있음"
+            ],
+            "buffers": [
+              "ETH 1개월이 BTC보다 11.09%p 강해 알트 회복 신호",
+              "BTC 해시레이트 7일 +15.05%: 네트워크 보안과 활동이 견조"
+            ],
+            "decision_brief": [
+              "- 오늘 결론: 중립~우호 (Risk 2.75, 신뢰도 68, 실행 모드 관망, 권장 비중 0%)",
               "- 한줄 판단: 지금은 관망이 더 안전합니다.",
               "- 진입 조건: 데이터 품질이 높고 BTC/ETH 상대강도가 개선될 때만 작은 비중으로 접근",
               "- 무효화 조건: 대기자금이 줄거나 고베타 알트가 BTC보다 계속 약하면 비중 확대 중지",
