@@ -1,7 +1,7 @@
 {
   "generatedAt": "2026-09-12T00:58:26.538Z",
   "region": "ap-northeast-2",
-  "source": "aws",
+  "source": "local-snapshot",
   "projects": [
     {
       "projectId": "market-agent",
@@ -46961,5 +46961,6 @@
       "performanceObjectKey": "performance/2026-09-11_073008_0900.json",
       "performanceMarkdownKey": "performance/2026-09-11_073008_0900.md"
     }
-  ]
+  ],
+  "refreshWarning": "spawnSync aws ENOBUFS"
 }
